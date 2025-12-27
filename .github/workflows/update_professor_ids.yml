@@ -1,0 +1,42 @@
+name: "Update Professor IDs"
+
+on:
+  # Runs every day at midnight UTC
+  schedule:
+    - cron: "0 0 * * *"
+  # Allows you to run it manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  update-ids:
+    runs-on: ubuntu-latest
+    # Give the action permission to write changes back to your repo
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        working-directory: ./backend
+        run: |
+          npm install axios
+          # If you have other dependencies in package.json, use: npm install
+
+      - name: Run Update Script
+        working-directory: ./backend
+        run: node scripts/updateProfessorIDs.js
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Automated update of professor RMP IDs"
+          file_pattern: 'backend/src/data/rmp_ids.json'
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
