@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 3000;
 const courseRoutes = require('./src/routes/courseRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const scheduleRoutes = require('./src/routes/scheduleRoutes');
+const ratingsRoutes = require('./src/routes/ratingsRoutes'); 
 
 app.use(cors());
 app.use(express.json());
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use('/api/courses', courseRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/schedules', scheduleRoutes);
+app.use('/api/ratings', ratingsRoutes);
 
 
 app.listen(PORT, () => {
