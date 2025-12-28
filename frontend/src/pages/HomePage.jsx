@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Calendar, ChevronDown, GraduationCap, BookOpen, Save, CheckCircle, AlertCircle, LogOut, LogIn, Loader } from 'lucide-react';
+import { Search, Calendar, ChevronDown, GraduationCap, BookOpen, Save, CheckCircle, AlertCircle, LogOut, LogIn, Loader, ArrowLeft, Star, MessageSquare } from 'lucide-react';
 
 // COMPONENTS
 import CourseCard from '../components/CourseCard';
@@ -17,6 +17,13 @@ const HomePage = () => {
       shortName: 'UCSC',
       term: 'Winter 2026',
       status: 'active'
+    },
+    {
+      id: 'sjsu',
+      name: 'San Jose State',
+      shortName: 'SJSU',
+      term: 'Spring 2026',
+      status: 'inactive'
     }
   ];
 
@@ -34,13 +41,16 @@ const HomePage = () => {
   const ITEMS_PER_PAGE = 20; 
 
   const [availableCourses, setAvailableCourses] = useState([]);
+  const [professorRatings, setProfessorRatings] = useState({}); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCourses, setSelectedCourses] = useState([]);
   
   const [showAIChat, setShowAIChat] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
-  const [showProfessorModal, setShowProfessorModal] = useState(null);
+  
+  // State for the professor detailed view
+  const [selectedProfessor, setSelectedProfessor] = useState(null);
 
   // --- HELPER: RESTORE DATA ---
   const restoreScheduleFromData = (savedCourses, allCourses) => {
@@ -83,10 +93,23 @@ const HomePage = () => {
 
       try {
         setLoading(true);
+        
+        // 1. Fetch available courses
         const response = await fetch('http://localhost:3000/api/courses');
         if (!response.ok) throw new Error('Failed to connect to server');
         const courseData = await response.json();
         setAvailableCourses(courseData);
+
+        // 2. Fetch Professor Ratings and Reviews
+        try {
+          const ratingsRes = await fetch('http://localhost:3000/api/ratings');
+          if (ratingsRes.ok) {
+            const ratingsData = await ratingsRes.json();
+            setProfessorRatings(ratingsData);
+          }
+        } catch (e) {
+          console.error("Could not load professor ratings:", e);
+        }
 
         if (token) {
           try {
@@ -99,7 +122,8 @@ const HomePage = () => {
                 localStorage.removeItem('user');
                 setUser(null);
                 showNotification("Session expired. Please log in again.", "error");
-            } else if (schedResponse.ok) {
+            } 
+            else if (schedResponse.ok) {
               const schedData = await schedResponse.json();
               if (schedData.courses) {
                 const restoredCourses = restoreScheduleFromData(schedData.courses, courseData);
@@ -123,30 +147,26 @@ const HomePage = () => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  // --- SEARCH RANKING LOGIC (The Weighted Solution) ---
+  // --- SEARCH RANKING LOGIC (FIXED SORTING) ---
   const processedCourses = useMemo(() => {
+    // FIX: Use numeric:true for natural sorting (AM 10 before AM 112)
+    const pisaSort = (a, b) => a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' });
+
     if (!searchQuery) {
-      return [...availableCourses].sort((a, b) => a.code.localeCompare(b.code));
+      return [...availableCourses].sort(pisaSort);
     }
 
     const lowerQuery = searchQuery.toLowerCase();
 
     const scored = availableCourses.map(course => {
       let score = 0;
-
-      // 1. Exact Code Match (Priority 1)
       if (course.code.toLowerCase() === lowerQuery) score += 1000;
-      
-      // 2. Partial Code Match (Priority 2)
       else if (course.code.toLowerCase().includes(lowerQuery)) score += 100;
 
-      // 3. Instructor Match (Priority 3)
       const instructorMatch = (course.sections || []).some(sec => 
         (sec.instructor || "").toLowerCase().includes(lowerQuery)
       );
       if (instructorMatch) score += 80;
-
-      // 4. Course Title Match (Priority 4 - Natural History "NatH" matches here)
       if (course.name.toLowerCase().includes(lowerQuery)) score += 10;
 
       return { course, score };
@@ -155,8 +175,8 @@ const HomePage = () => {
     return scored
       .filter(item => item.score > 0)
       .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score; // Sort by relevance
-        return a.course.code.localeCompare(b.course.code); // Tie-breaker: alphabetical
+        if (b.score !== a.score) return b.score - a.score;
+        return pisaSort(a.course, b.course); // Use PISA sort as tie-breaker
       })
       .map(item => item.course);
   }, [availableCourses, searchQuery]);
@@ -299,6 +319,13 @@ const HomePage = () => {
     } catch (err) { showNotification("Server error", 'error'); }
   };
 
+  // Navigation to professor details
+  const viewProfessorDetails = (name, stats) => {
+    if (!stats) return;
+    setSelectedProfessor({ name, ...stats });
+    setActiveTab('professor');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
       {/* NOTIFICATIONS */}
@@ -362,11 +389,20 @@ const HomePage = () => {
         <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 mb-6 min-h-[600px] flex flex-col">
             <div className="flex border-b">
               {['search', 'schedule'].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 py-4 font-medium capitalize ${activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
+                <button 
+                  key={tab} 
+                  onClick={() => setActiveTab(tab)} 
+                  className={`px-6 py-4 font-medium capitalize ${activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+                >
                   {tab === 'schedule' ? 'My Schedule' : tab}
                   {tab === 'schedule' && selectedCourses.length > 0 && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full ml-2">{selectedCourses.length}</span>}
                 </button>
               ))}
+              {activeTab === 'professor' && (
+                <button className="px-6 py-4 font-medium capitalize text-blue-600 border-b-2 border-blue-600">
+                    Professor Review
+                </button>
+              )}
             </div>
 
             {loading ? (
@@ -380,7 +416,19 @@ const HomePage = () => {
                         <input type="text" placeholder="Search courses or professors..." className="w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
                     <div className="space-y-4">
-                        {currentCourses.length === 0 ? <p className="text-center text-gray-500 py-8">No results.</p> : currentCourses.map(course => <CourseCard key={course.id} course={course} professorRatings={{}} onAdd={addCourse} />)}
+                        {currentCourses.length === 0 ? (
+                          <p className="text-center text-gray-500 py-8">No results.</p>
+                        ) : (
+                          currentCourses.map(course => (
+                            <CourseCard 
+                              key={course.id} 
+                              course={course} 
+                              professorRatings={professorRatings} // FIXED: Now passing real ratings
+                              onAdd={addCourse} 
+                              onShowProfessor={viewProfessorDetails}
+                            />
+                          ))
+                        )}
                     </div>
                     {processedCourses.length > ITEMS_PER_PAGE && (
                     <div className="flex justify-between items-center mt-8 pt-4 border-t">
@@ -391,6 +439,73 @@ const HomePage = () => {
                     )}
                 </div>
                 )}
+                
+                {/* PROFESSOR REVIEW PAGE */}
+                {activeTab === 'professor' && selectedProfessor && (
+                    <div className="p-8 flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-y-auto">
+                        <button 
+                            onClick={() => setActiveTab('search')} 
+                            className="mb-6 flex items-center gap-2 text-blue-600 font-semibold hover:underline"
+                        >
+                            <ArrowLeft className="w-4 h-4" /> Back to Search
+                        </button>
+                        
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-xl mb-8">
+                            <h2 className="text-4xl font-extrabold mb-4">{selectedProfessor.name.replace(/,/g, ', ')}</h2>
+                            <div className="flex flex-wrap gap-8">
+                                <div className="flex flex-col">
+                                    <span className="text-blue-100 text-sm font-bold uppercase tracking-wider">Overall Quality</span>
+                                    <span className="text-3xl font-black">⭐ {selectedProfessor.avgRating}/5</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-blue-100 text-sm font-bold uppercase tracking-wider">Difficulty</span>
+                                    <span className="text-3xl font-black">🔥 {selectedProfessor.avgDifficulty}/5</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-blue-100 text-sm font-bold uppercase tracking-wider">Would Take Again</span>
+                                    <span className="text-3xl font-black">🙌 {selectedProfessor.wouldTakeAgain}%</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-blue-100 text-sm font-bold uppercase tracking-wider">Total Ratings</span>
+                                    <span className="text-3xl font-black">📈 {selectedProfessor.numRatings}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6 max-w-4xl">
+                            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-4">
+                                <MessageSquare className="w-5 h-5 text-blue-600" /> Recent Student Reviews
+                            </h3>
+                            {selectedProfessor.reviews?.length > 0 ? selectedProfessor.reviews.map((rev, i) => (
+                                <div key={i} className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <span className="text-sm font-black text-blue-600 uppercase tracking-tighter bg-blue-50 px-2 py-1 rounded">
+                                                {rev.course}
+                                            </span>
+                                            <span className="ml-3 text-xs text-gray-400 font-medium italic">
+                                                {new Date(rev.date).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded uppercase">Quality: {rev.quality}</span>
+                                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded uppercase">Diff: {rev.difficulty}</span>
+                                            <span className="px-2 py-1 bg-indigo-600 text-white text-[10px] font-bold rounded uppercase">Grade: {rev.grade || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-gray-700 leading-relaxed italic text-sm border-l-4 border-blue-200 pl-4 py-1">
+                                        "{rev.comment}"
+                                    </p>
+                                </div>
+                            )) : (
+                                <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                    <p className="text-gray-400 font-medium">No written reviews found for this instructor.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === 'schedule' && (
                 <div className="flex flex-col lg:flex-row gap-6 h-full p-6 flex-1">
                     <div className="w-full lg:w-[35%] flex flex-col h-[calc(100vh-290px)]">

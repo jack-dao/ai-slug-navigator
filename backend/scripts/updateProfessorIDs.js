@@ -2,97 +2,93 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 
-const SCHOOL_ID = "U2Nob29sLTEwNzg="; // UCSC's RMP ID
+const dataDir = path.join(__dirname, '../src/data');
+const schools = JSON.parse(fs.readFileSync(path.join(dataDir, 'schools.json'), 'utf8'));
 
-function getPisaName(instructorName) {
-    let splitName = instructorName.split(",");
-    let lastName = splitName[0];
-    let firstInitial = splitName[1] ? splitName[1].split(".")[0] : "";
-    return [lastName, firstInitial];
+async function postWithRetry(url, data, config, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try { return await axios.post(url, data, config); } 
+        catch (err) {
+            if ((err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') && i < retries - 1) {
+                await new Promise(r => setTimeout(r, 3000));
+                continue;
+            }
+            throw err;
+        }
+    }
 }
 
-async function searchRMP(instructorName) {
-    const [lastName, firstInitial] = getPisaName(instructorName);
-    const queryText = `${lastName} ${firstInitial}`;
+function getPisaName(name) {
+    const split = name.split(",");
+    const lastName = split[0].trim();
+    const firstInitial = split[1] ? split[1].trim().charAt(0) : "";
+    return { lastName, firstInitial };
+}
 
-    try {
-        const resp = await axios.post("https://www.ratemyprofessors.com/graphql", {
-            query: `query NewSearchTeachersQuery($query: TeacherSearchQuery!) {
-                newSearch {
-                  teachers(query: $query) {
-                    edges {
-                      node {
-                        legacyId
-                        lastName
-                      }
-                    }
-                  }
-                }
-            }`,
-            variables: { query: { schoolID: SCHOOL_ID, text: queryText } }
-        }, {
-            headers: {
-                Authorization: "Basic dGVzdDp0ZXN0", // Guest account auth
-                "Content-Type": "application/json"
-            }
-        });
-
-        const teachers = resp.data?.data?.newSearch?.teachers?.edges || [];
-        if (teachers.length === 0) return null;
-
-        // Ensure the last name actually matches to avoid wrong schools
-        const bestMatch = teachers.find(t => 
-            t.node.lastName.toLowerCase().includes(lastName.toLowerCase())
-        );
-
-        return bestMatch ? bestMatch.node.legacyId : null;
-    } catch (err) {
-        return null;
-    }
+async function searchRMP(queryText, schoolRmpId) {
+    const resp = await postWithRetry("https://www.ratemyprofessors.com/graphql", {
+        query: `query ($query: TeacherSearchQuery!) {
+            newSearch { teachers(query: $query) { edges { node { 
+                legacyId firstName lastName department 
+                courseCodes { courseName } 
+            } } } }
+        }`,
+        variables: { query: { schoolID: schoolRmpId, text: queryText } }
+    }, { headers: { Authorization: "Basic dGVzdDp0ZXN0", "Content-Type": "application/json" } });
+    return resp.data?.data?.newSearch?.teachers?.edges || [];
 }
 
 async function buildMap() {
-    const dataDir = path.join(__dirname, '../src/data');
-    const coursesPath = path.join(dataDir, 'availableCourses.json');
     const rmpIdsPath = path.join(dataDir, 'rmp_ids.json');
+    let map = fs.existsSync(rmpIdsPath) ? JSON.parse(fs.readFileSync(rmpIdsPath, 'utf8')) : {};
 
-    // Create data directory if it doesn't exist
-    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    for (const [schoolKey, schoolData] of Object.entries(schools)) {
+        const coursesFile = path.join(dataDir, `availableCourses_${schoolKey}.json`);
+        if (!fs.existsSync(coursesFile)) continue;
+        const instructors = JSON.parse(fs.readFileSync(coursesFile, 'utf8'));
 
-    try {
-        const courses = JSON.parse(fs.readFileSync(coursesPath, 'utf8'));
-        const instructorSet = new Set();
-        courses.forEach(c => c.sections?.forEach(s => {
-            if (s.instructor && s.instructor !== "Staff") instructorSet.add(s.instructor);
-        }));
-
-        // If rmp_ids.json doesn't exist, start with an empty object {}
-        let map = fs.existsSync(rmpIdsPath) ? JSON.parse(fs.readFileSync(rmpIdsPath, 'utf8')) : {};
-        
-        console.log(`Starting search for ${instructorSet.size} instructors...`);
-
-        for (const name of instructorSet) {
+        for (const { instructor: name, courses: pisaCourses } of instructors) {
             if (map[name]) continue;
 
-            console.log(`🔍 Searching RMP for: ${name}`);
-            const id = await searchRMP(name);
+            const { lastName, firstInitial } = getPisaName(name);
+            const deptPrefix = pisaCourses[0].replace(/[0-9].*/, ""); 
+
+            console.log(`🔍 Scoring candidates for: ${name} (${pisaCourses.join(", ")})`);
             
-            if (id) {
-                map[name] = id;
-                console.log(`   ✅ Found: ${id}`);
-            } else {
-                console.log(`   ❌ No match.`);
+            let results = await searchRMP(`${lastName} ${firstInitial}`, schoolData.rmpId);
+            if (results.length === 0) results = await searchRMP(lastName, schoolData.rmpId);
+
+            const candidates = results.map(x => x.node);
+            if (candidates.length === 0) continue;
+
+            const scores = candidates.map(ins => {
+                let score = 0;
+                score += (ins.lastName.toLowerCase().endsWith(lastName.toLowerCase()) ? 1 : -10);
+                score += (ins.firstName.startsWith(firstInitial) ? 1 : -1);
+                
+                const taughtCourses = ins.courseCodes.map(c => c.courseName.replace(/\s/g, ""));
+                const taughtDepts = taughtCourses.map(c => c.replace(/[0-9].*/, ""));
+
+                if (taughtDepts.includes(deptPrefix) || (ins.department && ins.department.includes(deptPrefix))) score += 1;
+                if (taughtCourses.some(c => pisaCourses.includes(c))) score += 5;
+                
+                return score;
+            });
+
+            const bestIndex = scores.indexOf(Math.max(...scores));
+            const best = candidates[bestIndex];
+
+            if (scores[bestIndex] > 0 && best.lastName.toLowerCase().endsWith(lastName.toLowerCase()) && best.firstName.startsWith(firstInitial)) {
+                map[name] = best.legacyId;
+                console.log(`   ✅ Matched: ${best.firstName} ${best.lastName} (Score: ${scores[bestIndex]})`);
+            } 
+            else {
+                console.log(`   ❌ No confident match found (Top score: ${scores[bestIndex]})`);
             }
+
+            fs.writeFileSync(rmpIdsPath, JSON.stringify(map, null, 2));
             await new Promise(r => setTimeout(r, 1000));
         }
-
-        // This line creates the rmp_ids.json file for the first time
-        fs.writeFileSync(rmpIdsPath, JSON.stringify(map, null, 2));
-        console.log("Successfully saved rmp_ids.json");
-
-    } catch (err) {
-        console.error("Error:", err.message);
     }
 }
-
 buildMap();
