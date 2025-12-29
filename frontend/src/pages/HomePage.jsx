@@ -340,9 +340,15 @@ const HomePage = () => {
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {activeTab === 'search' && (
                 <div className="p-10">
-                    <div className="relative mb-12 max-w-4xl group">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 w-7 h-7 transition-colors" />
-                        <input type="text" placeholder="Search Courses, Professors, or Codes..." className="w-full pl-16 pr-8 py-7 bg-slate-50 border-2 border-slate-100 rounded-[30px] focus:bg-white focus:border-indigo-500 outline-none transition-all text-xl font-bold shadow-inner" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    <div className="relative mb-12 w-full group">
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 w-6 h-6 transition-colors" />
+                        <input 
+                            type="text" 
+                            placeholder="Search Courses, Professors, or Codes..." 
+                            className="w-full pl-14 pr-8 py-4 bg-slate-50 border-2 border-slate-100 rounded-[20px] focus:bg-white focus:border-indigo-500 outline-none transition-all text-lg font-bold shadow-inner placeholder:text-slate-300" 
+                            value={searchQuery} 
+                            onChange={(e) => setSearchQuery(e.target.value)} 
+                        />
                     </div>
                     <div className="grid grid-cols-1 gap-8">
                         {currentCourses.length === 0 ? (
@@ -366,7 +372,7 @@ const HomePage = () => {
                 {activeTab === 'schedule' && (
                 <div className="flex flex-col lg:flex-row gap-8 h-full p-10 flex-1">
                     <div className="w-full lg:w-[35%] flex flex-col h-[calc(100vh-320px)]">
-                        <div className="bg-slate-50 rounded-[30px] p-6 border-2 border-slate-100 flex-1 flex flex-col overflow-hidden">
+                        <div className="bg-slate-50 rounded-[30px] p-6 border-2 border-slate-100 flex-1 flex flex-col overflow-hidden shadow-inner">
                             <h3 className="font-black text-slate-700 mb-6 flex items-center gap-3 uppercase tracking-widest text-xs"><BookOpen className="w-5 h-5 text-indigo-600"/> Current Classes</h3>
                             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                                 {selectedCourses.length === 0 ? <div className="text-center text-slate-400 py-20 font-bold uppercase tracking-widest text-xs">No classes added yet.</div> : <ScheduleList selectedCourses={selectedCourses} onRemove={removeCourse} />}
