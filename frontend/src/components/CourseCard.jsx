@@ -21,6 +21,23 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
   const formatInstructor = (name) => name ? name.replace(/,/g, ', ') : 'Staff';
   const formatLocation = (loc) => loc ? loc.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'TBA';
 
+  // HELPER: Expand "TuTh" -> "Tuesday, Thursday"
+  const expandDays = (daysStr) => {
+    if (!daysStr || daysStr === 'TBA') return 'TBA';
+    const map = {
+      M: 'Monday',
+      Tu: 'Tuesday',
+      W: 'Wednesday',
+      Th: 'Thursday',
+      F: 'Friday',
+      Sa: 'Saturday',
+      Su: 'Sunday'
+    };
+    const matches = daysStr.match(/Tu|Th|Sa|Su|M|W|F/g);
+    if (!matches) return daysStr;
+    return matches.map(d => map[d]).join(', ');
+  };
+
   const renderStars = (rating) => (
     <div className="flex items-center gap-0.5">
       {[...Array(5)].map((_, i) => (
@@ -90,18 +107,16 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
           const selectedSub = section.subSections?.find(s => s.id === selectedSubId);
           const hasError = errors[section.id];
 
-          // --- LOGIC FOR COLORS AND BUTTONS ---
+          // --- TRAFFIC LIGHT & BUTTON LOGIC ---
           const capacity = section.capacity || 1;
           const enrolled = section.enrolled || 0;
           const fillRatio = enrolled / capacity;
           const fillPercentage = Math.min(fillRatio * 100, 100);
 
-          // Status Determination
           const isClosed = section.status === 'Closed' || fillRatio >= 1;
           const isWaitlist = section.status === 'Wait List';
           
-          // 1. Dynamic Bar Color (Traffic Light System)
-          let barColor = 'bg-emerald-500'; // Default Green
+          let barColor = 'bg-emerald-500';
           let statusBadge = 'bg-emerald-50 text-emerald-700 border-emerald-100';
           
           if (isClosed) {
@@ -112,7 +127,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
             statusBadge = 'bg-amber-50 text-amber-700 border-amber-100';
           }
 
-          // 2. Dynamic Button Style
           let buttonStyle = 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg';
           let buttonText = 'Add';
           let buttonDisabled = false;
@@ -124,7 +138,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
           } else if (isWaitlist) {
             buttonStyle = 'bg-amber-500 text-white hover:bg-amber-600 shadow-md';
             buttonText = 'Waitlist';
-            buttonDisabled = false; // Allow adding waitlisted classes!
+            buttonDisabled = false;
           }
 
           return (
@@ -149,19 +163,29 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                   )}
                 </div>
 
-                {/* SCHEDULE */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-bold text-slate-700 leading-none">
-                    <Clock className="w-4 h-4 text-indigo-400" />
-                    <span>{section.days} • {formatTime(section.startTime)}—{formatTime(section.endTime)}</span>
+                {/* SCHEDULE - NEW LAYOUT (Days top, Time bottom) */}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+                    <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-900 leading-tight">
+                            {expandDays(section.days)}
+                        </span>
+                        <span className="text-xs font-bold text-slate-500 mt-0.5">
+                            {formatTime(section.startTime)}—{formatTime(section.endTime)}
+                        </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                    <MapPin className="w-4 h-4 text-slate-300" />
-                    <span>{formatLocation(section.location)}</span>
+                  <div className="flex items-start gap-3">
+                    {/* Fixed Location Icon Color (Visible Indigo) */}
+                    <MapPin className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+                    <span className="text-xs font-bold text-slate-500 mt-0.5 leading-tight">
+                        {formatLocation(section.location)}
+                    </span>
                   </div>
                 </div>
 
-                {/* AVAILABILITY (New Traffic Light Bar) */}
+                {/* AVAILABILITY */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className={`text-[10px] px-2 py-0.5 font-bold uppercase rounded border ${statusBadge}`}>
@@ -177,7 +201,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                   </div>
                 </div>
 
-                {/* ACTION */}
+                {/* ACTION - CUSTOM DROPDOWN */}
                 <div className="flex flex-col gap-2 relative">
                   {hasDiscussions && (
                     <div className="relative" ref={openDropdownId === section.id ? dropdownRef : null}>
@@ -190,35 +214,47 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                           }`}
                         >
                           <span className="truncate">
-                            {selectedSub ? `${selectedSub.sectionNumber} (${formatTime(selectedSub.startTime)})` : "Select Discussion..."}
+                            {selectedSub ? `${expandDays(selectedSub.days)} ${formatTime(selectedSub.startTime)}` : "Select Discussion..."}
                           </span>
                           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdownId === section.id ? 'rotate-180' : ''}`} />
                         </button>
 
                         {/* DROPDOWN MENU */}
                         {openDropdownId === section.id && (
-                          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
+                          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
                             <div className="p-1">
+                              {/* CLEAR SELECTION */}
                               {selectedSubId && (
                                 <>
                                   <button
                                     onClick={() => handleSelectDiscussion(section.id, null)}
-                                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold mb-1 text-slate-400 italic hover:text-rose-500 hover:bg-rose-50 cursor-pointer flex items-center gap-2"
+                                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold mb-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 cursor-pointer flex items-center gap-2"
                                   >
                                     <RotateCcw className="w-3 h-3" /> Clear Selection
                                   </button>
                                   <div className="h-px bg-slate-100 my-1 mx-2" />
                                 </>
                               )}
+                              
+                              {/* DROPDOWN OPTIONS: DAYS TOP, TIMES BOTTOM */}
                               {section.subSections.map((sub) => (
                                 <button
                                   key={sub.id}
                                   onClick={() => handleSelectDiscussion(section.id, sub.id)}
-                                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold mb-1 last:mb-0 flex items-center justify-between group cursor-pointer ${
+                                  className={`w-full text-left px-3 py-2 rounded-lg text-xs mb-1 last:mb-0 flex items-center justify-between group cursor-pointer ${
                                     selectedSubId === sub.id ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-50 text-slate-600'
                                   }`}
                                 >
-                                  <span>{sub.sectionNumber} • {sub.days} {formatTime(sub.startTime)}</span>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="font-bold text-slate-800 group-hover:text-indigo-700">
+                                      {expandDays(sub.days)}
+                                    </span>
+                                    <span className="text-xs text-slate-500 font-medium group-hover:text-indigo-600">
+                                      {formatTime(sub.startTime)}–{formatTime(sub.endTime)}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400">Section {sub.sectionNumber}</span>
+                                  </div>
+                                  
                                   {selectedSubId === sub.id && <Check className="w-3 h-3 text-indigo-600" />}
                                 </button>
                               ))}
