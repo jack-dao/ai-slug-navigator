@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,8 +7,6 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
-
-// --- 1. SCHOOL & COURSE ---
 
 model School {
   id      Int      @id @default(autoincrement())
@@ -37,8 +33,6 @@ model Course {
   @@unique([schoolId, code])
 }
 
-// --- 2. SECTION & PROFESSOR (The New Part) ---
-
 model Section {
   id            Int      @id @default(autoincrement())
   sectionCode   String   @unique // e.g. "CSE 101-01"
@@ -49,7 +43,6 @@ model Section {
   sectionNumber String   
   sectionType   String   // "LEC", "LAB", etc.
   
-  // Parent/Child linking (e.g. Labs linked to a Lecture)
   parentId      Int?     
   parent        Section?  @relation("LinkedSections", fields: [parentId], references: [id])
   subSections   Section[] @relation("LinkedSections")
@@ -62,29 +55,22 @@ model Section {
   location      String
   enrolled      Int
   capacity      Int
-
-  // --- NEW: LINKING TO PROFESSOR ---
-  instructor    String   // The raw name from the scraper (e.g. "Tantalo, P.")
-  
-  // This relation connects the raw string above to the Professor table below.
+  instructor    String     
   professor     Professor? @relation(fields: [instructor], references: [name])
 }
 
 model Professor {
   id          String   @id @default(uuid())
-  name        String   @unique // Matches "Tantalo, P."
+  name        String   @unique
   
-  // Rate My Professor Data
   rmpId       String?  // The weird ID RMP uses (e.g. "VGVhY2hlci0yMzM=")
-  rating      Float?   // 0.0 to 5.0
-  difficulty  Float?   // 0.0 to 5.0
-  numRatings  Int?     // How many students reviewed them
-  
-  // Back-relation to see all classes this prof teaches
+  rating      Float?   
+  difficulty  Float?   
+  numRatings  Int?       
+  reviews     Json?
+
   sections    Section[]
 }
-
-// --- 3. USER DATA ---
 
 model User {
   id        Int      @id @default(autoincrement())

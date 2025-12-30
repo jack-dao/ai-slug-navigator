@@ -1,170 +1,191 @@
-// src/scrapers/ucsc_scraper.js
-const puppeteer = require('puppeteer');
+const axios = require('axios').default;
+const cheerio = require('cheerio');
 const { PrismaClient } = require('@prisma/client');
-
+const https = require('https'); 
 const prisma = new PrismaClient();
 
-async function scrapeAllClasses() {
-  console.log("🚀 Launching Master Scraper (All Subjects)...");
-  
-  const browser = await puppeteer.launch({ headless: false }); 
-  const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 800 });
+const agent = new https.Agent({ 
+    keepAlive: true,
+    maxSockets: 15 
+});
+
+const client = axios.create({ 
+    httpsAgent: agent,
+    timeout: 30000, 
+    headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+}); 
+
+const BASE_URL = 'https://pisa.ucsc.edu/class_search/index.php';
+
+const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (v, i) => arr.slice(i * size, i * size + size));
+
+async function scrapeFast() {
+  console.log("🚀 Launching PARALLEL Scraper (Optimized Mode)...");
 
   try {
-    // --- 1. SETUP SCHOOL ---
     const ucsc = await prisma.school.upsert({
       where: { name: "UCSC" },
       update: {},
       create: { name: "UCSC" }
     });
-    console.log(`🏫 Linked to School: ${ucsc.name} (ID: ${ucsc.id})`);
+    console.log(`🏫 Linked to School: ${ucsc.name}`);
+    console.log("📡 Connecting to UCSC PISA...");
+    const initRes = await client.get(BASE_URL);
+    let $ = cheerio.load(initRes.data);
+    
+    const termId = $('#term_dropdown option[selected]').val() || $('#term_dropdown option').eq(0).val();
+    console.log(`📅 Active Term ID: ${termId}`);
+    console.log("⚡️ Executing Mega-Fetch...");
+    const baseParams = {
+        'action': 'results',
+        'binds[:term]': termId,
+        'binds[:reg_status]': 'all',
+        'binds[:subject]': '', 
+        'rec_start': '0',
+        'rec_dur': '5000' 
+    };
 
-    // --- 2. GO TO SEARCH PAGE ---
-    await page.goto('https://pisa.ucsc.edu/class_search/', { waitUntil: 'networkidle2' });
+    const formData = new URLSearchParams(baseParams);
+    const megaResponse = await client.post(BASE_URL, formData.toString());
+    
+    $ = cheerio.load(megaResponse.data);
+    const panels = $('.panel.panel-default').toArray();
+    console.log(`📦 Payload received. Found ${panels.length} classes.`);
 
-    // --- 3. DYNAMIC TERM DETECTION ---
-    const currentTerm = await page.evaluate(() => document.querySelector('#term_dropdown').value);
-    const currentTermName = await page.evaluate(() => {
-        const select = document.querySelector('#term_dropdown');
-        return select.options[select.selectedIndex].text;
+    if (panels.length === 0) return;
+
+    console.log("👥 Pre-syncing Professors (Batch Mode)...");
+    const uniqueInstructors = new Set();
+    
+    panels.forEach(el => {
+        const header = $(el).find('.panel-heading').text().trim();
+        if (header.includes('Search Results')) return;
+        
+        const instructor = $(el).find('.panel-body .row > div:nth-child(2)')
+             .text().split(':')[1]?.trim() || "Staff";
+             
+        if (instructor) uniqueInstructors.add(instructor);
     });
-    console.log(`📅 Detected Active Term: ${currentTermName} (ID: ${currentTerm})`);
 
-    // --- 4. GET ALL SUBJECTS ---
-    const subjects = await page.evaluate(() => {
-        const options = Array.from(document.querySelectorAll('#subject option'));
-        return options.map(opt => opt.value).filter(val => val !== "");
+    const profData = Array.from(uniqueInstructors).map(name => ({ name }));
+    console.log(`   Found ${uniqueInstructors.size} unique instructors. Saving...`);
+    await prisma.professor.createMany({
+        data: profData,
+        skipDuplicates: true 
     });
     
-    console.log(`📚 Found ${subjects.length} subjects to scrape.`);
+    console.log("   ✅ Professors synced instantly. Starting class scrape...");
 
-    // --- 5. THE MEGA LOOP (Subject by Subject) ---
-    for (const subject of subjects) {
-        console.log(`\n-----------------------------------`);
-        console.log(`🔍 Scraping Subject: ${subject}...`);
+    const BATCH_SIZE = 20; 
+    const batches = chunk(panels, BATCH_SIZE);
+    let processedCount = 0;
 
-        try {
-            // A. Reset Search Form
-            await page.goto('https://pisa.ucsc.edu/class_search/', { waitUntil: 'networkidle2' });
-            await page.select('#term_dropdown', currentTerm);
-            await page.select('#subject', subject);
+    console.log(`🔥 Starting Batch Processing (${batches.length} batches)...`);
 
-            // B. Select "All Classes"
-            const statusDropdownId = await page.evaluate(() => {
-                const option = document.querySelector('option[value="all"]');
-                return option ? option.parentElement.id : null;
-            });
-            if (statusDropdownId) await page.select(`#${statusDropdownId}`, 'all');
+    for (const batch of batches) {
+        const promises = batch.map(el => processClass($, el, ucsc.id));
+        await Promise.all(promises);
 
-            // C. Click Search
-            await Promise.all([page.waitForNavigation(), page.click('.btn-primary')]);
-
-            // D. Loop Pages for this Subject
-            let keepGoing = true;
-            let pageNum = 1;
-
-            while (keepGoing) {
-                // --- SCRAPE DATA (Your Original Logic) ---
-                const scrapedData = await page.evaluate(() => {
-                    const results = [];
-                    const panels = document.querySelectorAll('.panel.panel-default');
-
-                    panels.forEach(panel => {
-                        const headerText = panel.querySelector('.panel-heading')?.innerText || '';
-                        const bodyText = panel.querySelector('.panel-body')?.innerText || '';
-                        
-                        if (headerText.includes('Search Results')) return;
-
-                        let status = 'Closed';
-                        if (headerText.includes('Open')) status = 'Open';
-                        if (headerText.includes('Wait List')) status = 'Wait List'; 
-
-                        let cleanHeader = headerText.replace(/Open|Closed|Wait List/g, '').trim();
-                        const parts = cleanHeader.split('-');
-                        if (parts.length < 2) return;
-
-                        const code = parts[0].trim(); 
-                        const rest = parts.slice(1).join('-').trim();
-                        const sectionMatch = rest.match(/^(\d+[A-Z]?)\s+(.*)/);
-                        
-                        let section = "01"; 
-                        let title = rest;
-                        if (sectionMatch) {
-                            section = sectionMatch[1];
-                            title = sectionMatch[2];
-                        }
-
-                        const lines = bodyText.split('\n').map(l => l.trim());
-                        let instructor = "Staff";
-                        let location = "TBA";
-                        let meeting = "TBA";
-                        let enrolled = 0;
-                        let capacity = 0;
-
-                        for (let i = 0; i < lines.length; i++) {
-                            const line = lines[i];
-                            if (line.includes('Instructor:')) instructor = lines[i+1] || "Staff";
-                            if (line.includes('Location:')) location = lines[i+1] || "TBA"; 
-                            if (line.includes('Day and Time:')) meeting = lines[i+1] || "TBA";
-                            if (line.includes('Enrolled')) {
-                                const matches = line.match(/(\d+)\s+of\s+(\d+)/);
-                                if (matches) {
-                                    enrolled = parseInt(matches[1]);
-                                    capacity = parseInt(matches[2]);
-                                }
-                            }
-                        }
-                        
-                        results.push({ code, title, section, instructor, meeting, location, status, enrolled, capacity });
-                    });
-                    return results;
-                });
-
-                // --- SAVE BATCH ---
-                if (scrapedData.length > 0) {
-                    await saveToDatabase(scrapedData, ucsc.id);
-                    process.stdout.write(`   (Page ${pageNum}: ${scrapedData.length} classes)`);
-                }
-
-                // --- NEXT PAGE CHECK ---
-                const nextButtonSelector = 'a[onclick*="action.value = \'next\'"]';
-                const hasNextButton = await page.evaluate((selector) => !!document.querySelector(selector), nextButtonSelector);
-                
-                if (hasNextButton) {
-                    await Promise.all([
-                        page.waitForNavigation({ waitUntil: 'networkidle2' }),
-                        page.click(nextButtonSelector) 
-                    ]);
-                    pageNum++;
-                } else {
-                    keepGoing = false;
-                }
-            }
-        } catch (e) {
-            console.log(`   ❌ Skipped ${subject} (No classes found or error)`);
-        }
+        processedCount += batch.length;
+        process.stdout.write(`\r✅ Processed ${processedCount}/${panels.length} classes...`);
+        
+        await new Promise(r => setTimeout(r, 50));
     }
 
+    console.log(`\n\n🎉 Master Scrape Complete!`);
+
   } catch (error) {
-    console.error("❌ Fatal Error:", error);
+    console.error("\n❌ Fatal Error:", error);
   } finally {
-    await browser.close();
     await prisma.$disconnect();
   }
 }
 
-// --- REUSED DATABASE LOGIC ---
-async function saveToDatabase(courses, schoolId) {
-  for (const course of courses) {
+async function processClass($, el, schoolId) {
+    const header = $(el).find('.panel-heading').text().trim();
+    if (header.includes('Search Results')) return;
+
+    let status = header.includes('Open') ? 'Open' : (header.includes('Wait List') ? 'Wait List' : 'Closed');
+    const cleanHeader = header.replace(/Open|Closed|Wait List/g, '').trim();
+    const parts = cleanHeader.split('-');
+    if (parts.length < 2) return;
+
+    const code = parts[0].trim(); 
+    const rest = parts.slice(1).join('-').trim();
+    const sectionMatch = rest.match(/^(\d+[A-Z]?)\s+(.*)/);
+    const section = sectionMatch ? sectionMatch[1] : "01";
+    const title = sectionMatch ? sectionMatch[2] : rest;
+
+    let instructor = $(el).find('.panel-body .row > div:nth-child(2)').text().split(':')[1]?.trim() || "Staff";
+    let location = $(el).find('.panel-body .row > div:nth-child(3) > div:nth-child(1)').text().replace("Location:", "").trim() || "TBA";
+    let meeting = $(el).find('.panel-body .row > div:nth-child(3) > div:nth-child(2)').text().replace("Day and Time:", "").trim() || "TBA";
+    
+    let enrolled = 0, capacity = 0;
+    const enrollText = $(el).find('.panel-body .row > div:nth-child(4)').text();
+    const enrollMatch = enrollText.match(/(\d+)\s+of\s+(\d+)/);
+    if (enrollMatch) {
+        enrolled = parseInt(enrollMatch[1]);
+        capacity = parseInt(enrollMatch[2]);
+    }
+
+    let discussions = [];
+    const detailsLinkHref = $(el).find('h2 a').attr('href');
+    if (detailsLinkHref) {
+        try {
+            const detailsUrl = `${BASE_URL.replace('index.php', '')}${detailsLinkHref}`;
+            const detailsRes = await client.get(detailsUrl);
+            discussions = parseDiscussions(detailsRes.data);
+        } catch (err) {}
+    }
+
+    await saveToDatabase({ code, title, section, instructor, meeting, location, status, enrolled, capacity, discussions }, schoolId);
+}
+
+function parseDiscussions(html) {
+    const $ = cheerio.load(html);
+    const results = [];
+    const targetHeader = $('.panel-heading').filter((i, el) => $(el).text().includes('Associated'));
+    if (targetHeader.length === 0) return [];
+
+    const panel = targetHeader.closest('.panel');
+    const rows = panel.find('.row.row-striped');
+
+    rows.each((i, row) => {
+        const text = $(row).text().replace(/[\n\r]+/g, ' ').trim();
+        const headerMatch = text.match(/#(\d+)\s+([A-Z]+)\s+(\d+[A-Z]?)/);
+        if (!headerMatch) return;
+
+        const type = headerMatch[2];
+        const sectionNum = headerMatch[3];
+        let time = "TBA", location = "TBA", enrolled = 0, capacity = 0, days = "TBA";
+
+        const timeMatch = text.match(/(\d{2}:\d{2}[AP]M-\d{2}:\d{2}[AP]M)/);
+        if (timeMatch) time = timeMatch[1];
+        const dayMatch = text.match(/\b(M|Tu|W|Th|F|MW|TuTh|MWF|Sa|Su)\b/);
+        if (dayMatch) days = dayMatch[1];
+        const locMatch = text.match(/Loc:\s*(.*?)(?=\s+(Enrl|Wait|Staff|$))/);
+        if (locMatch) location = locMatch[1].trim();
+        const statsMatch = text.match(/Enrl:\s*(\d+)\s*\/\s*(\d+)/);
+        if (statsMatch) { enrolled = parseInt(statsMatch[1]); capacity = parseInt(statsMatch[2]); }
+
+        results.push({
+            sectionNumber: sectionNum, sectionType: type, days, time, location, enrolled, capacity,
+            status: (enrolled >= capacity && capacity > 0) ? "Closed" : "Open"
+        });
+    });
+    return results;
+}
+
+async function saveToDatabase(course, schoolId) {
     try {
-      // 1. Upsert Course
       const dbCourse = await prisma.course.upsert({
         where: { schoolId_code: { schoolId: schoolId, code: course.code } },
         update: { 
           name: course.title,
           instructor: course.instructor,
-          department: course.code.split(' ')[0] // e.g., "MATH" or "CSE"
+          department: course.code.split(' ')[0]
         },
         create: {
           code: course.code,
@@ -176,12 +197,11 @@ async function saveToDatabase(courses, schoolId) {
         }
       });
 
-      // 2. Upsert Section
       const days = course.meeting.split(' ')[0] || "TBA"; 
       const timeRange = course.meeting.split(' ').slice(1).join(' ') || "TBA";
-      const uniqueSectionCode = `${course.code}-${course.section}`;
+      const uniqueSectionCode = `${course.code}-${course.section}`; 
 
-      const sectionData = {
+      const lectureData = {
         courseId: dbCourse.id,
         sectionNumber: course.section,
         sectionCode: uniqueSectionCode,
@@ -197,19 +217,47 @@ async function saveToDatabase(courses, schoolId) {
         status: course.status
       };
 
-      const existingSection = await prisma.section.findFirst({
-        where: { sectionCode: uniqueSectionCode }
-      });
-
+      let lectureId;
+      const existingSection = await prisma.section.findUnique({ where: { sectionCode: uniqueSectionCode } });
       if (existingSection) {
-        await prisma.section.update({ where: { id: existingSection.id }, data: sectionData });
+        const updated = await prisma.section.update({ where: { id: existingSection.id }, data: lectureData });
+        lectureId = updated.id;
       } else {
-        await prisma.section.create({ data: sectionData });
+        const created = await prisma.section.create({ data: lectureData });
+        lectureId = created.id;
       }
-    } catch (e) {
-      // Ignore duplicates or minor errors
+
+      if (course.discussions && course.discussions.length > 0) {
+          for (const dis of course.discussions) {
+              const uniqueDisCode = `${course.code}-${dis.sectionNumber}`;
+              const disData = {
+                  courseId: dbCourse.id,
+                  parentId: lectureId,
+                  sectionCode: uniqueDisCode,
+                  sectionNumber: dis.sectionNumber,
+                  sectionType: dis.sectionType,
+                  instructor: "Staff", 
+                  days: dis.days,
+                  time: dis.time,
+                  startTime: dis.time.split('-')[0] || "TBA",
+                  endTime: dis.time.split('-')[1] || "TBA",
+                  location: dis.location,
+                  enrolled: dis.enrolled,
+                  capacity: dis.capacity,
+                  status: dis.status
+              };
+
+              const existingDis = await prisma.section.findUnique({ where: { sectionCode: uniqueDisCode }});
+              if (existingDis) {
+                  await prisma.section.update({ where: { id: existingDis.id }, data: disData });
+              } else {
+                  await prisma.section.create({ data: disData });
+              }
+          }
+      }
+    } catch (e) { 
+        console.error(`Error saving ${course.code}:`, e.message);
     }
-  }
 }
 
-scrapeAllClasses();
+scrapeFast();
