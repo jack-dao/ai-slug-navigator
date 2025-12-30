@@ -10,9 +10,13 @@ const ChatSidebar = ({
 }) => {
   const [input, setInput] = React.useState('');
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
+  // Auto-scroll to bottom of chat
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -28,7 +32,8 @@ const ChatSidebar = ({
   if (!isOpen) return null;
 
   return (
-    <div className="w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col h-[calc(100vh-140px)] sticky top-24 overflow-hidden animate-in slide-in-from-right-4 duration-300">
+    // CHANGED HEIGHT HERE: h-[550px]
+    <div className="w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col h-[550px] sticky top-24 overflow-hidden animate-in slide-in-from-right-4 duration-300">
       
       {/* Header */}
       <div className="p-5 border-b border-[#FDC700] bg-gradient-to-r from-[#003C6C] to-[#00508c] flex items-center justify-between shrink-0">
@@ -46,8 +51,11 @@ const ChatSidebar = ({
         </button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 custom-scrollbar">
+      {/* Messages - Scrolls Internally */}
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 custom-scrollbar"
+      >
         {messages.length === 0 && (
             <div className="text-center py-10 opacity-60">
                 <Sparkles className="w-12 h-12 text-[#003C6C] mx-auto mb-3" />
@@ -66,7 +74,6 @@ const ChatSidebar = ({
             </div>
           </div>
         ))}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
@@ -78,7 +85,7 @@ const ChatSidebar = ({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                e.preventDefault();
+                e.preventDefault(); // Stop page scroll
                 handleSend();
               }
             }}
