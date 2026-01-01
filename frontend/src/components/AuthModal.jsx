@@ -53,10 +53,10 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
       if (result.error) throw result.error;
 
-      if (result.data.user) {
-        const user = result.data.user;
-        const session = result.data.session;
-        
+      const user = result.data.user;
+      const session = result.data.session;
+
+      if (user && session) {
         const normalizedUser = {
             id: user.id,
             email: user.email,
@@ -65,6 +65,9 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
         onLoginSuccess(normalizedUser, session.access_token);
         onClose();
+      } else if (user && !session) {
+        alert("Account created! Please check your email to confirm your account before logging in.");
+        setIsLogin(true); 
       }
 
     } catch (err) {
