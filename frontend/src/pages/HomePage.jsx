@@ -339,9 +339,7 @@ const HomePage = ({ user, session }) => {
     if (filters.days.length > 0) {
         results = results.filter(course => course.sections?.some(sec => {
             const secDays = sec.days || ""; 
-            const map = { M: 'Monday', Tu: 'Tuesday', W: 'Wednesday', Th: 'Thursday', F: 'Friday' };
-            const selectedFullDays = filters.days.map(d => map[d]);
-            return selectedFullDays.some(day => secDays.includes(day));
+            return filters.days.some(day => secDays.includes(day));
         }));
     }
 
