@@ -179,7 +179,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
                         <label className="text-xs font-bold text-slate-700 ml-1">Full Name</label>
                         <div className="relative">
                             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                            <input type="text" placeholder="John Doe" required className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#003C6C] outline-none transition-all font-medium text-slate-800"
+                            <input type="text" placeholder="Sammy Slug" required className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#003C6C] outline-none transition-all font-medium text-slate-800"
                             value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                         </div>
                     </div>
