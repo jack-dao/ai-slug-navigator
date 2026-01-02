@@ -15,15 +15,17 @@ model School {
 }
 
 model Course {
-  id          Int       @id @default(autoincrement())
-  code        String    // e.g. "CSE 101"
-  name        String    // e.g. "Algorithms"
-  credits     Int
-  department  String
+  id                Int       @id @default(autoincrement())
+  code              String    // e.g. "CSE 101"
+  name              String    // e.g. "Algorithms"
+  credits           Int
+  department        String
+  geCode            String?
+  prerequisites   String?
   
   // Note: This field gets overwritten if multiple profs teach the same course.
   // The real instructor info lives in 'Section'.
-  instructor  String    
+  instructor  String?    
 
   schoolId    Int
   school      School    @relation(fields: [schoolId], references: [id])

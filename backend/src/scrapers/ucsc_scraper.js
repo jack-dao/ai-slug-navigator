@@ -131,29 +131,51 @@ async function processClass($, el, schoolId) {
     }
 
     let discussions = [];
+    let geCode = null;
+    let prerequisites = null;
+
     const detailsLinkHref = $(el).find('h2 a').attr('href');
     if (detailsLinkHref) {
         try {
             const detailsUrl = `${BASE_URL.replace('index.php', '')}${detailsLinkHref}`;
             const detailsRes = await client.get(detailsUrl);
-            discussions = parseDiscussions(detailsRes.data);
-        } catch (err) {}
+            const detail$ = cheerio.load(detailsRes.data);
+
+            // 1. Parse Discussions
+            discussions = parseDiscussions(detail$);
+
+            // 2. Parse GEs and Prerequisites
+            const panelText = detail$('.panel-body').text();
+            
+            // Regex to find "General Education Code(s): IM"
+            const geMatch = panelText.match(/General Education Code\(s\):\s*([A-Z,\s]+)/i);
+            if (geMatch) geCode = geMatch[1].trim();
+
+            // Regex to find "Prerequisite(s): ..."
+            const prereqMatch = panelText.match(/Prerequisite\(s\):\s*([^.\n]+)/i);
+            if (prereqMatch) prerequisites = prereqMatch[1].trim();
+
+        } catch (err) {
+            // If fetching details fails, we just continue without GE/Prereqs
+        }
     }
 
-    await saveToDatabase({ code, title, section, instructor, meeting, location, status, enrolled, capacity, discussions }, schoolId);
+    await saveToDatabase({ 
+        code, title, section, instructor, meeting, location, status, enrolled, capacity, discussions,
+        geCode, prerequisites // <--- Pass new data
+    }, schoolId);
 }
 
-function parseDiscussions(html) {
-    const $ = cheerio.load(html);
+function parseDiscussions(detail$) {
     const results = [];
-    const targetHeader = $('.panel-heading').filter((i, el) => $(el).text().includes('Associated'));
+    const targetHeader = detail$('.panel-heading').filter((i, el) => detail$(el).text().includes('Associated'));
     if (targetHeader.length === 0) return [];
 
     const panel = targetHeader.closest('.panel');
     const rows = panel.find('.row.row-striped');
 
     rows.each((i, row) => {
-        const text = $(row).text().replace(/[\n\r]+/g, ' ').trim();
+        const text = detail$(row).text().replace(/[\n\r]+/g, ' ').trim();
         const headerMatch = text.match(/#(\d+)\s+([A-Z]+)\s+(\d+[A-Z]?)/);
         if (!headerMatch) return;
 
@@ -185,7 +207,10 @@ async function saveToDatabase(course, schoolId) {
         update: { 
           name: course.title,
           instructor: course.instructor,
-          department: course.code.split(' ')[0]
+          department: course.code.split(' ')[0],
+          // --- Update new fields ---
+          geCode: course.geCode,
+          prerequisites: course.prerequisites
         },
         create: {
           code: course.code,
@@ -193,7 +218,10 @@ async function saveToDatabase(course, schoolId) {
           credits: 5,
           instructor: course.instructor,
           department: course.code.split(' ')[0],
-          schoolId: schoolId
+          schoolId: schoolId,
+          // --- Create new fields ---
+          geCode: course.geCode,
+          prerequisites: course.prerequisites
         }
       });
 
