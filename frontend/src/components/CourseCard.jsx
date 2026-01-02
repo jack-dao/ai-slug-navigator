@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Plus, Star, MapPin, ChevronDown, Check, RotateCcw, Info, User, Hash, Lock } from 'lucide-react';
+import { Clock, Plus, Star, MapPin, ChevronDown, RotateCcw, User, Hash, Lock, BookOpen, GraduationCap, Monitor, AlertCircle } from 'lucide-react';
 
 const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
   const [selectedSubSections, setSelectedSubSections] = useState({});
@@ -7,8 +7,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const dropdownRef = useRef(null);
 
-  // Destructure new fields
-  const { geCode, prerequisites } = course;
+  const { geCode, prerequisites, career, grading } = course;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -32,26 +31,34 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
     return matches.map(d => map[d]).join(', ');
   };
 
-  // --- NEW: Helper for GE Colors ---
-  const getGEColor = (ge) => {
-    if (!ge) return 'bg-slate-100 text-slate-500';
-    // Math/Science/Engineering -> Blues/Purples
-    if (['MF', 'SI', 'SR'].includes(ge)) return 'bg-blue-50 text-blue-700 border-blue-100';
-    // Arts/Humanities -> Yellows/Oranges
-    if (['CC', 'ER', 'IM', 'TA'].includes(ge)) return 'bg-amber-50 text-amber-700 border-amber-100';
-    // Social Sciences -> Emeralds/Teals
-    if (['PE-E', 'PE-H', 'PE-T'].includes(ge)) return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-    // Default
-    return 'bg-slate-50 text-slate-600 border-slate-200';
+  const getGEMapping = (code) => {
+    const map = {
+      'CC': 'Cross-Cultural Analysis', 
+      'ER': 'Ethnicity and Race', 
+      'IM': 'Interpreting Arts and Media',
+      'MF': 'Mathematical and Formal Reasoning', 
+      'SI': 'Scientific Inquiry', 
+      'SR': 'Statistical Reasoning',
+      'TA': 'Textual Analysis', 
+      'PE-E': 'Environmental Awareness', 
+      'PE-H': 'Human Behavior', 
+      'PE-T': 'Technology and Society',
+      'PR-E': 'Collaborative Endeavor', 
+      'PR-C': 'Creative Process', 
+      'PR-S': 'Service Learning',
+      'C': 'Composition', 
+      'DC': 'Disciplinary Communication'
+    };
+    return map[code] || code;
   };
 
   const renderStars = (rating) => (
     <div className="flex items-center gap-0.5">
       {[...Array(5)].map((_, i) => (
         <div key={i} className="relative">
-          <Star className="w-3.5 h-3.5 text-slate-200" />
+          <Star className="w-3 h-3 text-slate-200" />
           <div className="absolute top-0 left-0 overflow-hidden h-full" style={{ width: `${Math.min(Math.max((rating - i) * 100, 0), 100)}%` }}>
-            <Star className="w-3.5 h-3.5 fill-current text-[#FDC700]" />
+            <Star className="w-3 h-3 fill-current text-[#FDC700]" />
           </div>
         </div>
       ))}
@@ -73,7 +80,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
 
   const handleAddClick = (section) => {
     const hasDiscussions = section.subSections?.length > 0;
-    
     if (hasDiscussions) {
       const selectedId = selectedSubSections[section.id];
       if (!selectedId) {
@@ -88,48 +94,44 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
   };
 
   return (
-    <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm hover:shadow-md transition-all mb-6 overflow-visible group/card">
+    <div className="bg-white rounded-[20px] shadow-sm hover:shadow-md transition-all mb-6 overflow-visible group/card">
       
-      {/* --- REVISED HEADER --- */}
-      <div className="px-6 py-4 border-b border-slate-50 bg-slate-50/30 flex flex-col gap-3">
-        <div className="flex justify-between items-start">
-            <div className="flex items-center gap-4">
-            <h3 className="text-xl font-[800] text-slate-900">{course.code}</h3>
-            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
-            <p className="text-slate-500 font-bold text-sm hidden sm:block">{course.name}</p>
+      {/* HEADER */}
+      <div className="px-6 py-5 bg-white rounded-t-[20px] border-t border-l border-r border-slate-200 border-b border-b-slate-100">
+        <div className="flex justify-between items-start mb-3">
+            <div>
+                <div className="flex items-center gap-3 mb-1">
+                    <h3 className="text-2xl font-[800] text-[#003C6C] tracking-tight">{course.code}</h3>
+                    <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-md uppercase tracking-wide">
+                        {course.credits} Units
+                    </span>
+                </div>
+                <p className="text-slate-600 font-bold text-base">{course.name}</p>
             </div>
             
-            <div className="flex items-center gap-2">
-                {/* GE Badge */}
-                {geCode && (
-                    <span className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 ${getGEColor(geCode)}`}>
-                        <Hash className="w-3.5 h-3.5" /> {geCode}
-                    </span>
-                )}
-                <span className="px-4 py-1.5 bg-[#003C6C] text-white text-xs font-bold rounded-lg shadow-sm">{course.credits} Units</span>
-            </div>
+            {geCode && (
+                <div className="flex flex-col items-end justify-center">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">General Education</span>
+                    <div className="px-3 py-1.5 rounded-xl bg-[#003C6C]/5 border border-[#003C6C]/10 flex items-center gap-2">
+                        <span className="text-sm font-bold text-[#003C6C]">{getGEMapping(geCode)} ({geCode})</span>
+                    </div>
+                </div>
+            )}
         </div>
-
-        {/* Prerequisites Row */}
+        
         {prerequisites && (
-            <div className="flex items-start gap-2 text-xs font-medium text-slate-500 bg-white/50 p-2 rounded-lg border border-slate-100 max-w-full">
+            <div className="mt-4 flex items-start gap-2 text-xs text-slate-500 bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
                 <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                <span className="leading-tight">
-                    <span className="font-bold text-slate-600">Prerequisite:</span> {prerequisites.replace(/^Prerequisite\(s\):/i, '').trim()}
+                <span className="leading-snug">
+                    <span className="font-bold text-slate-700">Prerequisite:</span> {prerequisites.replace(/^Prerequisite\(s\):/i, '').trim()}
                 </span>
             </div>
         )}
       </div>
 
-      <div className="hidden lg:grid grid-cols-[2fr_1.5fr_1.2fr_180px] px-8 py-3 bg-white border-b border-slate-50 text-sm font-bold text-slate-800">
-        <span>Instructor & Ratings</span>
-        <span>Schedule & Location</span>
-        <span>Availability</span>
-        <span className="text-right pr-4">Action</span>
-      </div>
-
-      <div className="divide-y divide-slate-50">
-        {course.sections?.map((section) => {
+      {/* SECTIONS */}
+      <div className="divide-y divide-slate-200 border-l border-r border-b border-slate-200 rounded-b-[20px]">
+        {course.sections?.map((section, index) => {
           const hasDiscussions = section.subSections?.length > 0;
           const ratingData = professorRatings?.[section.instructor];
           const selectedSubId = selectedSubSections[section.id];
@@ -138,145 +140,185 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
 
           const capacity = section.capacity || 1;
           const enrolled = section.enrolled || 0;
-          const fillRatio = enrolled / capacity;
-          const fillPercentage = Math.min(fillRatio * 100, 100);
-
-          const statusText = section.status || 'Open';
-          const isClosed = statusText === 'Closed'; 
-          const isWaitlist = statusText.includes('Wait');
-          
-          let barColor = 'bg-emerald-500';
-          let statusBadge = 'bg-emerald-50 text-emerald-700 border-emerald-100';
-          
-          if (isClosed) {
-            barColor = 'bg-rose-500';
-            statusBadge = 'bg-rose-50 text-rose-700 border-rose-100';
-          } else if (isWaitlist) {
-            barColor = 'bg-orange-500';
-            statusBadge = 'bg-orange-50 text-orange-700 border-orange-100';
-          }
+          const fillPercentage = Math.min((enrolled / capacity) * 100, 100);
+          const isClosed = section.status === 'Closed';
+          const isWaitlist = section.status?.includes('Wait');
+          const isLast = index === course.sections.length - 1;
 
           return (
-            <div key={section.id} className="p-6 lg:px-8 hover:bg-slate-50/50 transition-colors group/row">
-              <div className="grid grid-cols-1 lg:grid-cols-[2fr_1.5fr_1.2fr_180px] items-start lg:items-center gap-8">
+            <div key={section.id} className={`p-6 hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
+              <div className="flex flex-col lg:flex-row gap-6">
                 
-                <div className="space-y-2">
-                  <div className="flex flex-col items-start">
-                    <button 
-                      onClick={() => onShowProfessor(section.instructor, ratingData)}
-                      className="group/prof flex items-center gap-2 text-lg font-[800] text-[#003C6C] cursor-pointer transition-all text-left leading-none hover:underline decoration-2 underline-offset-4 decoration-[#FDC700]"
-                    >
-                      <User className="w-4 h-4 text-[#003C6C] transition-colors" />
-                      {formatInstructor(section.instructor)}
-                      <Info className="w-3 h-3 text-[#003C6C] opacity-0 group-hover/prof:opacity-100 transition-opacity" />
-                    </button>
-                  </div>
-                  {ratingData ? (
-                    <div className="flex items-center gap-3 bg-white w-fit px-2 py-1 rounded-lg border border-slate-100 shadow-sm">
-                      {renderStars(ratingData.avgRating)}
-                      <span className="text-xs font-bold text-slate-700">{ratingData.avgRating}</span>
-                    </div>
-                  ) : (
-                    <span className="text-xs font-bold text-slate-400">No Ratings</span>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <Clock className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
-                    <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-900 leading-tight">
-                            {expandDays(section.days)}
-                        </span>
-                        <span className="text-xs font-bold text-slate-700 mt-0.5">
-                            {formatTime(section.startTime)}—{formatTime(section.endTime)}
-                        </span>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
-                    <span className="text-xs font-bold text-slate-700 mt-0.5 leading-tight">
-                        {formatLocation(section.location)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs px-2 py-1 font-bold rounded border ${statusBadge}`}>
-                      {statusText}
-                    </span>
-                    <span className="text-xs font-bold text-slate-700">{enrolled}/{capacity}</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-700 ${barColor}`} 
-                      style={{ width: `${fillPercentage}%` }} 
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 relative">
-                  {hasDiscussions && (
-                    <div className="relative" ref={openDropdownId === section.id ? dropdownRef : null}>
-                        <button
-                          onClick={() => toggleDropdown(section.id)}
-                          className={`w-full flex items-center justify-between text-xs font-bold border rounded-xl px-3 py-2.5 bg-white transition-all cursor-pointer ${
-                            hasError ? 'border-rose-300 bg-rose-50 text-rose-600' : 'border-slate-200 text-slate-700 hover:border-[#003C6C] hover:text-[#003C6C]'
-                          }`}
-                        >
-                          <span className="truncate">
-                            {selectedSub ? `${expandDays(selectedSub.days)} ${formatTime(selectedSub.startTime)}` : "Select Discussion..."}
-                          </span>
-                          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdownId === section.id ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {openDropdownId === section.id && (
-                          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
-                            <div className="p-1">
-                              {selectedSubId && (
-                                <>
-                                  <button
-                                    onClick={() => handleSelectDiscussion(section.id, null)}
-                                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold mb-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 cursor-pointer flex items-center gap-2"
-                                  >
-                                    <RotateCcw className="w-3 h-3" /> Clear Selection
-                                  </button>
-                                  <div className="h-px bg-slate-100 my-1 mx-2" />
-                                </>
-                              )}
-                              {section.subSections.map((sub) => (
-                                <button
-                                  key={sub.id}
-                                  onClick={() => handleSelectDiscussion(section.id, sub.id)}
-                                  className={`w-full text-left px-3 py-2 rounded-lg text-xs mb-1 last:mb-0 flex items-center justify-between group cursor-pointer ${
-                                    selectedSubId === sub.id ? 'bg-[#003C6C]/10 text-[#003C6C]' : 'hover:bg-slate-50 text-slate-700'
-                                  }`}
-                                >
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="font-bold text-slate-800 group-hover:text-[#003C6C]">
-                                      {expandDays(sub.days)}
-                                    </span>
-                                    <span className="text-xs text-slate-600 font-medium group-hover:text-[#003C6C]">
-                                      {formatTime(sub.startTime)}–{formatTime(sub.endTime)}
-                                    </span>
-                                  </div>
-                                  {selectedSubId === sub.id && <Check className="w-3 h-3 text-[#003C6C]" />}
-                                </button>
-                              ))}
+                {/* LEFT: Metadata */}
+                <div className="flex-[2] min-w-0 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <div>
+                        <p className="text-xs font-bold text-[#003C6C] mb-1">Instructor</p>
+                        <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-center gap-2 group/prof text-left cursor-pointer">
+                            <div className="w-10 h-10 rounded-full bg-[#003C6C]/5 flex items-center justify-center text-[#003C6C]">
+                                <User className="w-5 h-5" />
                             </div>
-                          </div>
-                        )}
+                            <div>
+                                <span className="block font-bold text-slate-900 group-hover/prof:text-[#003C6C] group-hover/prof:underline decoration-2 underline-offset-2 transition-colors">
+                                    {formatInstructor(section.instructor)}
+                                </span>
+                                {ratingData ? (
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <div className="flex">{renderStars(ratingData.avgRating)}</div>
+                                        <span className="text-xs font-bold text-slate-500">{ratingData.avgRating} ({ratingData.numRatings})</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-xs font-medium text-slate-400">No ratings yet</span>
+                                )}
+                            </div>
+                        </button>
                     </div>
-                  )}
-                  
-                  <button
-                    onClick={() => handleAddClick(section)}
-                    className="w-full py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 bg-[#003C6C] text-white hover:bg-[#002a4d] shadow-md hover:shadow-lg"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Class
-                  </button>
+
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-6">
+                        <div>
+                            <p className="text-xs font-bold text-[#003C6C] mb-0.5">Class Number</p>
+                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
+                                <Hash className="w-3.5 h-3.5 text-[#003C6C]" />
+                                {section.classNumber || '---'}
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-[#003C6C] mb-0.5">Instruction</p>
+                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
+                                <Monitor className="w-3.5 h-3.5 text-[#003C6C]" />
+                                {section.instructionMode || 'In Person'}
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-[#003C6C] mb-0.5">Career</p>
+                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
+                                <GraduationCap className="w-3.5 h-3.5 text-[#003C6C]" />
+                                {career || 'Undergrad'}
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-[#003C6C] mb-0.5">Grading</p>
+                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
+                                <BookOpen className="w-3.5 h-3.5 text-[#003C6C]" />
+                                {grading ? 'Option' : 'Letter'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* MIDDLE: Schedule */}
+                <div className="flex-1 flex flex-col justify-center border-l border-slate-100 pl-6 border-dashed">
+                    <div className="flex items-start gap-4 mb-4">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-slate-900 text-sm">{expandDays(section.days)}</p>
+                            <p className="text-xs font-bold text-slate-900 mt-0.5">{formatTime(section.startTime)} - {formatTime(section.endTime)}</p>
+                            <div className="flex items-center gap-1.5 mt-1.5 text-xs font-bold text-slate-600">
+                                <MapPin className="w-3 h-3" />
+                                {formatLocation(section.location)}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-1.5 w-full max-w-[15rem]">
+                        <div className="flex justify-between items-end">
+                            <span className={`text-[10px] font-bold uppercase tracking-wider ${isClosed ? 'text-rose-600' : isWaitlist ? 'text-orange-600' : 'text-[#003C6C]'}`}>
+                                {section.status || 'Open'}
+                            </span>
+                            <div className="flex items-baseline gap-1 text-right leading-none">
+                                <span className="text-xs font-black text-slate-700">{enrolled}/{capacity}</span>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Enrolled</span>
+                            </div>
+                        </div>
+                        
+                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div 
+                                className={`h-full ${isClosed ? 'bg-rose-500' : isWaitlist ? 'bg-orange-500' : 'bg-emerald-500'}`} 
+                                style={{ width: `${fillPercentage}%` }} 
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* RIGHT: Actions */}
+                <div className="w-full lg:w-72 flex flex-col gap-2 justify-center">
+                    {hasDiscussions && (
+                        <div className="relative" ref={openDropdownId === section.id ? dropdownRef : null}>
+                            {/* FIX 1: Added cursor-pointer to Select Discussion Button */}
+                            <button 
+                                onClick={() => toggleDropdown(section.id)} 
+                                className={`w-full flex items-center justify-between text-xs font-bold border rounded-xl px-3 py-4 transition-all cursor-pointer ${
+                                    hasError ? 'border-rose-300 bg-rose-50 text-rose-600' : 'bg-white border-slate-200 text-slate-600 hover:border-[#003C6C] hover:text-[#003C6C]'
+                                }`}
+                            >
+                                <span className="truncate">
+                                    {selectedSub ? `${expandDays(selectedSub.days)} ${formatTime(selectedSub.startTime)}` : "Select Discussion"}
+                                </span>
+                                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdownId === section.id ? 'rotate-180' : ''}`} />
+                            </button>
+                            
+                            {openDropdownId === section.id && (
+                                <div className="absolute top-full mt-2 left-0 w-full bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden">
+                                    <div className="max-h-96 overflow-y-auto custom-scrollbar p-1">
+                                        {selectedSubId && (
+                                            <button onClick={() => handleSelectDiscussion(section.id, null)} className="w-full text-left px-3 py-2.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-lg mb-1 flex items-center gap-2 cursor-pointer">
+                                                <RotateCcw className="w-3 h-3" /> Clear Selection
+                                            </button>
+                                        )}
+                                        {section.subSections.map((sub) => (
+                                            <button 
+                                                key={sub.id} 
+                                                onClick={() => handleSelectDiscussion(section.id, sub.id)} 
+                                                // FIX 1: Added cursor-pointer to discussion items
+                                                className={`w-full text-left px-3 py-3 text-xs mb-0.5 flex items-center gap-3 border-b border-slate-50 last:border-0 rounded-lg group transition-colors cursor-pointer ${
+                                                    selectedSubId === sub.id 
+                                                        ? 'bg-blue-50 text-[#003C6C]' 
+                                                        : 'hover:bg-slate-50 text-slate-600'
+                                                }`}
+                                            >
+                                                <div className="flex-1">
+                                                    <span className="font-black text-slate-800 block">{expandDays(sub.days)}</span>
+                                                    {/* FIX 2: Ensure time is readable even if class is closed */}
+                                                    <span className="text-[10px] font-bold text-slate-900 block mt-0.5">
+                                                        {formatTime(sub.startTime)} - {formatTime(sub.endTime)}
+                                                    </span>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <span className="text-[10px] font-black text-slate-900 block">{sub.enrolled}/{sub.capacity}</span>
+                                                    <span className="uppercase text-slate-400 font-bold tracking-wider text-[9px] block">
+                                                        {sub.enrolled >= sub.capacity ? 'Full' : 'Open'}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
+                    {/* FIX 1: Added cursor-pointer to Add Class button */}
+                    <button 
+                        onClick={() => handleAddClick(section)} 
+                        className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer ${
+                            isClosed 
+                                ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 hover:shadow-md'
+                                : 'bg-[#003C6C] text-white hover:bg-[#002a4d] hover:shadow-md'
+                        }`}
+                    >
+                        {isClosed ? (
+                            <>
+                                <AlertCircle className="w-4 h-4" /> 
+                                Closed (Add Anyway)
+                            </>
+                        ) : (
+                            <>
+                                <Plus className="w-4 h-4" /> 
+                                Add Class
+                            </>
+                        )}
+                    </button>
                 </div>
               </div>
             </div>
