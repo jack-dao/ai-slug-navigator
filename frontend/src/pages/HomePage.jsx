@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, GraduationCap, BookOpen, Save, CheckCircle, AlertCircle, LogOut, Bot, RotateCcw, MessageSquare, Tag, Flame, ThumbsUp, TrendingUp, X, ChevronDown, ChevronUp, Check, Star, User, Calendar } from 'lucide-react';
+import { Search, Calendar, GraduationCap, BookOpen, Save, CheckCircle, AlertCircle, LogOut, Bot, RotateCcw, MessageSquare, Tag, Flame, ThumbsUp, TrendingUp, X, ChevronDown, ChevronUp, Check, Star, User, LogIn } from 'lucide-react';
 import { supabase } from '../supabase'; 
 
 // COMPONENTS
@@ -8,7 +8,6 @@ import ChatSidebar from '../components/ChatSidebar';
 import AuthModal from '../components/AuthModal';
 import CalendarView from '../components/CalendarView';
 import ScheduleList from '../components/ScheduleList';
-import ProfessorModal from '../components/ProfessorModal'; 
 
 // --- HELPER: CUSTOM DROPDOWN COMPONENT ---
 const CustomDropdown = ({ value, options, onChange, placeholder, prefix = "" }) => {
@@ -29,7 +28,7 @@ const CustomDropdown = ({ value, options, onChange, placeholder, prefix = "" }) 
     <div className="relative w-full" ref={ref}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 hover:border-[#003C6C] transition-all shadow-sm active:scale-[0.99]"
+        className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 hover:border-[#003C6C] transition-all shadow-sm active:scale-[0.99] cursor-pointer"
       >
         <span className="truncate">{prefix}{value || placeholder}</span>
         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -42,7 +41,7 @@ const CustomDropdown = ({ value, options, onChange, placeholder, prefix = "" }) 
               <button
                 key={opt}
                 onClick={() => { onChange(opt); setIsOpen(false); }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold mb-0.5 last:mb-0 transition-colors flex items-center justify-between ${
+                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold mb-0.5 last:mb-0 transition-colors flex items-center justify-between cursor-pointer ${
                   value === opt 
                     ? 'bg-[#003C6C]/10 text-[#003C6C]' 
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -55,6 +54,77 @@ const CustomDropdown = ({ value, options, onChange, placeholder, prefix = "" }) 
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// --- INTERNAL PROFESSOR MODAL ---
+const ProfessorModal = ({ professor, isOpen, onClose }) => {
+  if (!isOpen || !professor) return null;
+  const reviews = professor.reviews || [];
+  const hasReviews = reviews.length > 0;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
+      <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-[32px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
+        <div className="px-10 py-8 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
+          <div>
+            <h2 className="text-4xl font-bold text-[#003C6C] tracking-tight">{professor.name.replace(/,/g, ', ')}</h2>
+            <div className="flex items-center gap-2 mt-2">
+                <span className="bg-[#FDC700] text-[#003C6C] text-sm px-3 py-1 rounded-full font-bold">Instructor</span>
+                <p className="text-sm font-bold text-slate-500">Analytics</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-3 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"><X className="w-8 h-8 text-slate-400" /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-10 bg-slate-50/50 custom-scrollbar">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {[
+              { label: 'Quality', val: `${professor.avgRating || '?'}/5`, icon: <Star className="w-6 h-6 text-[#FDC700]" />, bg: 'bg-[#003C6C]' },
+              { label: 'Difficulty', val: `${professor.avgDifficulty || '?'}/5`, icon: <Flame className="w-6 h-6 text-rose-400" />, bg: 'bg-slate-800' },
+              { label: 'Retake', val: `${professor.wouldTakeAgain || '0'}%`, icon: <ThumbsUp className="w-6 h-6 text-emerald-400" />, bg: 'bg-slate-800' },
+              { label: 'Ratings', val: professor.numRatings || '0', icon: <TrendingUp className="w-6 h-6 text-slate-500" />, bg: 'bg-white border-2 border-slate-100', text: 'text-slate-900' }
+            ].map((s, i) => (
+              <div key={i} className={`${s.bg} p-8 rounded-[28px] shadow-sm flex flex-col items-center text-center transition-transform hover:scale-105`}>
+                <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center shadow-inner mb-4">{s.icon}</div>
+                <p className={`text-xs font-bold mb-1 ${s.text ? 'text-slate-500' : 'text-white/60'}`}>{s.label}</p>
+                <p className={`text-3xl font-bold ${s.text || 'text-white'}`}>{s.val}</p>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-8">
+            <h3 className="text-xl font-bold text-[#003C6C] flex items-center gap-3 mb-8 px-2"><MessageSquare className="w-6 h-6 text-[#003C6C]" /> Recent student feedback</h3>
+            {hasReviews ? (
+              reviews.map((rev, i) => (
+                <div key={i} className="bg-white p-8 rounded-[32px] border border-slate-200 hover:shadow-lg transition-all group relative overflow-hidden">
+                  <div className="absolute top-0 bottom-0 left-0 w-2 bg-slate-100 group-hover:bg-[#FDC700] transition-colors" />
+                  <div className="flex items-center justify-between mb-6 pl-4">
+                    <div className="flex items-center gap-4">
+                      <span className="px-4 py-1.5 bg-[#003C6C] text-white text-xs font-bold rounded-lg shadow-sm">{rev.course || 'General'}</span>
+                      <span className="text-sm font-bold text-slate-500 flex items-center gap-2"><Calendar className="w-4 h-4" />{rev.date ? new Date(rev.date).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    {rev.grade && <span className="px-4 py-2 bg-slate-50 text-slate-600 border border-slate-100 text-xs font-bold rounded-lg shadow-sm">Grade: {rev.grade}</span>}
+                  </div>
+                  <p className="text-slate-800 font-medium leading-relaxed italic pl-4 text-xl mb-4">"{rev.comment}"</p>
+                  {rev.tags && rev.tags.length > 0 && (
+                     <div className="flex flex-wrap gap-2 pl-4 pt-4 border-t border-slate-100">
+                        {rev.tags.map((tag, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded-lg border border-slate-200"><Tag className="w-3 h-3" /> {tag}</span>
+                        ))}
+                     </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-24 bg-white rounded-[32px] border-4 border-dashed border-slate-200">
+                 <MessageSquare className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 font-bold text-lg">No professor reviews available yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -78,6 +148,7 @@ const FilterSection = ({ title, children, isOpen = true }) => {
 
 // --- MAIN HOMEPAGE COMPONENT ---
 const HomePage = ({ user, session }) => {
+  console.log("📢 HomePage.jsx: Received User Prop:", user);
   const UCSC_SCHOOL = { id: 'ucsc', name: 'UC Santa Cruz', shortName: 'UCSC', term: 'Winter 2026', status: 'active' };
   const selectedSchool = UCSC_SCHOOL;
 
@@ -183,8 +254,9 @@ const HomePage = ({ user, session }) => {
         setSelectedCourses([]); 
       }
     };
+    
     fetchUserSchedule();
-  }, [user, session, availableCourses]);
+  }, [user, session, availableCourses]); 
 
   useEffect(() => { setCurrentPage(1); }, [searchQuery, filters]);
 
@@ -219,6 +291,7 @@ const HomePage = ({ user, session }) => {
     setSearchQuery('');
   };
 
+  // --- HELPER: Parse "5:20PM" to decimal (17.33) ---
   const parseTime = (timeStr) => {
     if (!timeStr) return null;
     const match = timeStr.match(/(\d+):(\d+)(AM|PM)/);
@@ -228,6 +301,12 @@ const HomePage = ({ user, session }) => {
     if (period === 'PM' && h !== 12) h += 12;
     if (period === 'AM' && h === 12) h = 0;
     return h + (parseInt(m) / 60);
+  };
+
+  // --- HELPER: Parse "Tu, Th" to ["Tu", "Th"] ---
+  const getDaysArray = (dayStr) => {
+    if (!dayStr || dayStr === 'TBA') return [];
+    return dayStr.match(/Tu|Th|Sa|Su|M|W|F/g) || [];
   };
 
   const processedCourses = useMemo(() => {
@@ -249,6 +328,7 @@ const HomePage = ({ user, session }) => {
 
     if (filters.openOnly) results = results.filter(course => course.sections?.some(sec => sec.status !== 'Closed' && sec.status !== 'Wait List'));
     if (filters.minRating > 0) results = results.filter(course => course.sections?.some(sec => { const stats = professorRatings[sec.instructor]; return stats && stats.avgRating >= filters.minRating; }));
+    
     if (filters.minUnits > 0) results = results.filter(course => parseInt(course.credits) === filters.minUnits);
 
     if (filters.days.length > 0) {
@@ -279,7 +359,66 @@ const HomePage = ({ user, session }) => {
     setTimeout(() => { setNotification(prev => (prev?.message === message ? null : prev)); }, 3000);
   };
 
+  // --- UPDATED CONFLICT CHECKER (Includes Labs/Discussions) ---
+  const checkForConflicts = (newSection, existingCourses, ignoreCode) => {
+    // Helper to get time segments from any section (Main or Lab)
+    const getSegments = (sec) => {
+        const segments = [];
+        if (!sec) return segments;
+
+        // 1. Main Lecture Segment
+        if (sec.days && sec.startTime && sec.endTime) {
+            segments.push({
+                days: getDaysArray(sec.days),
+                start: parseTime(sec.startTime),
+                end: parseTime(sec.endTime),
+            });
+        }
+
+        // 2. Selected Discussion/Lab Segment
+        if (sec.selectedLab && sec.selectedLab.days && sec.selectedLab.startTime && sec.selectedLab.endTime) {
+            segments.push({
+                days: getDaysArray(sec.selectedLab.days),
+                start: parseTime(sec.selectedLab.startTime),
+                end: parseTime(sec.selectedLab.endTime),
+            });
+        }
+        return segments;
+    };
+
+    const newSegments = getSegments(newSection);
+
+    for (const existing of existingCourses) {
+        if (existing.code === ignoreCode) continue;
+
+        const existingSegments = getSegments(existing.selectedSection);
+
+        // Compare ALL new segments vs ALL existing segments
+        for (const newSeg of newSegments) {
+            for (const exSeg of existingSegments) {
+                // Check Day Overlap
+                const dayOverlap = newSeg.days.some(d => exSeg.days.includes(d));
+                if (dayOverlap) {
+                    // Check Time Overlap: (StartA < EndB) and (EndA > StartB)
+                    if (newSeg.start < exSeg.end && newSeg.end > exSeg.start) {
+                        return existing.code; // Return the conflicting course code
+                    }
+                }
+            }
+        }
+    }
+    return null;
+  };
+
   const addCourse = (course, section) => {
+    // 1. Conflict Check
+    const conflictingCourse = checkForConflicts(section, selectedCourses, course.code);
+    if (conflictingCourse) {
+        showNotification(`Time conflict with ${conflictingCourse}`, 'error');
+        return;
+    }
+
+    // 2. Add/Update if no conflict
     const existingIndex = selectedCourses.findIndex(c => c.code === course.code);
     const isUpdate = existingIndex !== -1;
     const newSchedule = isUpdate 
@@ -287,6 +426,7 @@ const HomePage = ({ user, session }) => {
         : [...selectedCourses, { ...course, selectedSection: section }];
     
     setSelectedCourses(newSchedule);
+    
     if (isUpdate) showNotification(`Updated ${course.code}`, 'success');
     else showNotification(`Added ${course.code}`, 'success');
   };
@@ -304,20 +444,13 @@ const HomePage = ({ user, session }) => {
     setShowProfileDropdown(false); 
     showNotification("Logged out"); 
   };
-
-  const viewProfessorDetails = (name, stats) => {
-    const fullStats = professorRatings[name] || {};
-    setSelectedProfessor({ name, ...fullStats, reviews: fullStats.reviews || [] });
-    setIsProfModalOpen(true);
-  };
-
+  
   const handleSaveSchedule = async () => {
     if (!user || !session) { 
         showNotification("Please log in to save", 'error'); 
         setShowAuthModal(true); 
         return; 
     }
-    
     showNotification("Saving schedule...", 'info');
     try {
       const payload = { 
@@ -328,7 +461,6 @@ const HomePage = ({ user, session }) => {
               labCode: course.selectedSection?.selectedLab?.sectionCode
           })) 
       };
-      
       const response = await fetch('http://localhost:3000/api/schedules', { 
           method: 'POST', 
           headers: { 
@@ -337,13 +469,15 @@ const HomePage = ({ user, session }) => {
           }, 
           body: JSON.stringify(payload) 
       });
-      
-      if (response.ok) {
-          showNotification("Schedule saved successfully!", 'success');
-      } else {
-          showNotification("Failed to save schedule", 'error');
-      }
+      if (response.ok) showNotification("Schedule saved successfully!", 'success');
+      else showNotification("Failed to save schedule", 'error');
     } catch (err) { showNotification("Server error, could not save", 'error'); }
+  };
+
+  const viewProfessorDetails = (name, stats) => {
+    const fullStats = professorRatings[name] || {};
+    setSelectedProfessor({ name, ...fullStats, reviews: fullStats.reviews || [] });
+    setIsProfModalOpen(true);
   };
 
   return (
@@ -398,7 +532,7 @@ const HomePage = ({ user, session }) => {
               {user ? (
                 <div className="relative" ref={profileDropdownRef}>
                     <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="w-10 h-10 bg-[#FDC700] text-[#003C6C] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:scale-105 transition-transform">
-                      {user.user_metadata?.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
+                      {user.user_metadata?.full_name?.[0] || user.email?.[0] || 'U'}
                     </button>
                     {showProfileDropdown && (
                       <div className="absolute top-full right-0 mt-4 w-72 bg-white rounded-[24px] shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-slate-100 p-8 animate-in zoom-in-95 z-[60]">
@@ -411,11 +545,9 @@ const HomePage = ({ user, session }) => {
                     )}
                 </div>
               ) : (
-                <button 
-                    onClick={() => setShowAuthModal(true)} 
-                    className="px-6 py-2.5 bg-[#FDC700] text-[#003C6C] font-bold rounded-xl text-sm hover:bg-[#eec00e] transition-all cursor-pointer border-2 border-[#FDC700] shadow-lg active:scale-95"
-                >
-                    Log in
+                // FIXED: Login Button matches Ask Sammy (text-sm)
+                <button onClick={() => setShowAuthModal(true)} className="px-6 py-2.5 bg-[#FDC700] text-[#003C6C] font-bold rounded-xl text-sm hover:bg-[#eec00e] transition-all cursor-pointer border-2 border-[#FDC700] flex items-center gap-2 shadow-lg active:shadow-inner active:translate-y-0.5">
+                    <User className="w-4 h-4" /> Log in
                 </button>
               )}
             </div>
@@ -556,9 +688,30 @@ const HomePage = ({ user, session }) => {
                     </div>
                     {processedCourses.length > ITEMS_PER_PAGE && (
                         <div className="flex justify-between items-center mt-12 mb-8 px-8 border-t border-slate-200 pt-8">
-                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-6 py-2 border border-slate-200 bg-white rounded-lg font-bold text-sm text-slate-700 hover:border-[#003C6C] hover:text-[#003C6C] disabled:opacity-50 transition-colors">Prev</button>
+                            <button 
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                                disabled={currentPage === 1} 
+                                // FIXED: No cursor pointer or hover styles when disabled (Page 1)
+                                className={`px-6 py-2 border border-slate-200 bg-white rounded-lg font-bold text-sm text-slate-700 transition-colors ${
+                                    currentPage === 1 
+                                    ? 'opacity-50 cursor-default' 
+                                    : 'hover:border-[#003C6C] hover:text-[#003C6C] cursor-pointer'
+                                }`}
+                            >
+                                Prev
+                            </button>
                             <span className="font-bold text-slate-500 text-sm">Page {currentPage} of {totalPages}</span>
-                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-6 py-2 border border-slate-200 bg-white rounded-lg font-bold text-sm text-slate-700 hover:border-[#003C6C] hover:text-[#003C6C] disabled:opacity-50 transition-colors">Next</button>
+                            <button 
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                                disabled={currentPage === totalPages} 
+                                className={`px-6 py-2 border border-slate-200 bg-white rounded-lg font-bold text-sm text-slate-700 transition-colors ${
+                                    currentPage === totalPages 
+                                    ? 'opacity-50 cursor-default' 
+                                    : 'hover:border-[#003C6C] hover:text-[#003C6C] cursor-pointer'
+                                }`}
+                            >
+                                Next
+                            </button>
                         </div>
                     )}
                 </main>

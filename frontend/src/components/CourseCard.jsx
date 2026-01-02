@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Plus, Star, MapPin, ChevronDown, RotateCcw, User, Hash, Lock, BookOpen, GraduationCap, Monitor, AlertCircle } from 'lucide-react';
+import { Clock, Plus, Star, MapPin, ChevronDown, RotateCcw, User, Hash, Lock, BookOpen, GraduationCap, Monitor, AlertCircle, Hourglass } from 'lucide-react';
 
 const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
   const [selectedSubSections, setSelectedSubSections] = useState({});
@@ -94,7 +94,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
   };
 
   return (
-    <div className="bg-white rounded-[20px] shadow-sm hover:shadow-md transition-all mb-6 overflow-visible group/card">
+    <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 overflow-visible group/card">
       
       {/* HEADER */}
       <div className="px-6 py-5 bg-white rounded-t-[20px] border-t border-l border-r border-slate-200 border-b border-b-slate-100">
@@ -245,7 +245,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                 <div className="w-full lg:w-72 flex flex-col gap-2 justify-center">
                     {hasDiscussions && (
                         <div className="relative" ref={openDropdownId === section.id ? dropdownRef : null}>
-                            {/* FIX 1: Added cursor-pointer to Select Discussion Button */}
                             <button 
                                 onClick={() => toggleDropdown(section.id)} 
                                 className={`w-full flex items-center justify-between text-xs font-bold border rounded-xl px-3 py-4 transition-all cursor-pointer ${
@@ -253,7 +252,8 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                                 }`}
                             >
                                 <span className="truncate">
-                                    {selectedSub ? `${expandDays(selectedSub.days)} ${formatTime(selectedSub.startTime)}` : "Select Discussion"}
+                                    {/* FIX: Now shows Start - End time */}
+                                    {selectedSub ? `${expandDays(selectedSub.days)} ${formatTime(selectedSub.startTime)} - ${formatTime(selectedSub.endTime)}` : "Select Discussion"}
                                 </span>
                                 <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdownId === section.id ? 'rotate-180' : ''}`} />
                             </button>
@@ -270,7 +270,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                                             <button 
                                                 key={sub.id} 
                                                 onClick={() => handleSelectDiscussion(section.id, sub.id)} 
-                                                // FIX 1: Added cursor-pointer to discussion items
                                                 className={`w-full text-left px-3 py-3 text-xs mb-0.5 flex items-center gap-3 border-b border-slate-50 last:border-0 rounded-lg group transition-colors cursor-pointer ${
                                                     selectedSubId === sub.id 
                                                         ? 'bg-blue-50 text-[#003C6C]' 
@@ -279,8 +278,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                                             >
                                                 <div className="flex-1">
                                                     <span className="font-black text-slate-800 block">{expandDays(sub.days)}</span>
-                                                    {/* FIX 2: Ensure time is readable even if class is closed */}
-                                                    <span className="text-[10px] font-bold text-slate-900 block mt-0.5">
+                                                    <span className="text-[10px] font-bold text-black block mt-0.5">
                                                         {formatTime(sub.startTime)} - {formatTime(sub.endTime)}
                                                     </span>
                                                 </div>
@@ -298,19 +296,26 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                         </div>
                     )}
                     
-                    {/* FIX 1: Added cursor-pointer to Add Class button */}
+                    {/* BUTTON STATE: Closed vs Waitlist vs Open */}
                     <button 
                         onClick={() => handleAddClick(section)} 
                         className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer ${
                             isClosed 
-                                ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 hover:shadow-md'
-                                : 'bg-[#003C6C] text-white hover:bg-[#002a4d] hover:shadow-md'
+                                ? 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-md' // Solid Red for Closed
+                                : isWaitlist 
+                                    ? 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-md' // Solid Orange for Waitlist
+                                    : 'bg-[#003C6C] text-white hover:bg-[#002a4d] hover:shadow-md' // Standard Blue for Open
                         }`}
                     >
                         {isClosed ? (
                             <>
                                 <AlertCircle className="w-4 h-4" /> 
                                 Closed (Add Anyway)
+                            </>
+                        ) : isWaitlist ? (
+                            <>
+                                <AlertCircle className="w-4 h-4" /> 
+                                Waitlist (Add Anyway)
                             </>
                         ) : (
                             <>
