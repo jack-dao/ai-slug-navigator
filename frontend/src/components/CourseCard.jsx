@@ -279,7 +279,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                                                 <div className="flex-1">
                                                     <span className="font-black text-slate-800 block">{expandDays(sub.days)}</span>
                                                     <span className="text-[10px] font-bold text-black block mt-0.5">
-                                                        {formatTime(sub.startTime)} - {formatTime(sub.endTime)}
+                                                        {formatTime(sub.startTime)} - {formatTime(sub.endTime)} | {formatLocation(sub.location)}
                                                     </span>
                                                 </div>
                                                 <div className="text-right shrink-0">
