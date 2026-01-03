@@ -101,7 +101,8 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
   };
 
   return (
-    <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 overflow-hidden group/card w-full">
+    // FIX: Removed fixed width. Added 'w-full' to adapt to the container.
+    <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 overflow-visible group/card w-full">
       
       {/* HEADER */}
       <div className="px-6 py-5 bg-white rounded-t-[20px] border-t border-l border-r border-slate-200 border-b border-b-slate-100">
@@ -155,13 +156,15 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
           return (
             <div key={section.id} className={`p-6 hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
               
-              {/* RESPONSIVE LAYOUT: Use flex-wrap so content can flow naturally without being cut off */}
-              <div className="flex flex-wrap gap-x-6 gap-y-6">
+              {/* RESPONSIVE LAYOUT: flex-wrap allows items to drop to the next line if space runs out */}
+              <div className="flex flex-wrap gap-6">
                 
-                {/* 1. LEFT: Metadata (Instructor + Grid) 
-                    Basis: 350px. Allows growing.
+                {/* 1. LEFT: Metadata
+                    - flex-grow-[10]: Takes up the most space (fills row on laptop)
+                    - min-w-[380px]: Prevents text crushing
                 */}
-                <div className="flex-[2_1_350px] flex flex-row gap-6 min-w-[300px]">
+                <div className="flex-[10_1_380px] flex flex-row gap-6">
+                    {/* Instructor */}
                     <div className="w-[150px] shrink-0">
                         <p className="text-[10px] font-bold text-[#003C6C] mb-1">Instructor</p>
                         <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-start gap-2 group/prof text-left cursor-pointer w-full">
@@ -186,6 +189,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                         </button>
                     </div>
 
+                    {/* Metadata Grid */}
                     <div className="flex-1 grid grid-cols-2 gap-y-3 gap-x-4 min-w-[200px]">
                         <div>
                             <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Class Number</p>
@@ -219,9 +223,10 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                 </div>
 
                 {/* 2. MIDDLE: Schedule
-                    Basis: 220px. Grows slightly.
+                    - flex-grow-[1]: Standard growth
+                    - min-w-[220px]: Prevents crushing
                 */}
-                <div className="flex-[1_1_220px] flex flex-col justify-center border-l border-slate-100 pl-6 border-dashed min-w-[200px]">
+                <div className="flex-[1_1_220px] flex flex-col justify-center border-l border-slate-100 pl-6 border-dashed">
                     <div className="flex items-start gap-4 mb-4">
                         <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
                             <Clock className="w-5 h-5" />
@@ -256,11 +261,11 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                     </div>
                 </div>
 
-                {/* 3. RIGHT: Actions 
-                    Basis: 220px. 
-                    If this column + others > 100%, this one wraps to a new line automatically.
+                {/* 3. RIGHT: Actions
+                    - flex-grow-[1]: Standard growth
+                    - min-w-[220px]: Prevents crushing
                 */}
-                <div className="flex-[1_1_220px] flex flex-col gap-2 justify-center min-w-[220px]">
+                <div className="flex-[1_1_220px] flex flex-col gap-2 justify-center">
                     {hasDiscussions && (
                         <div className="relative" ref={openDropdownId === section.id ? dropdownRef : null}>
                             <button 
@@ -313,15 +318,15 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                         </div>
                     )}
                     
-                    {/* BUTTON STATE: Closed vs Waitlist vs Open */}
+                    {/* BUTTON STATE */}
                     <button 
                         onClick={() => handleAddClick(section)} 
                         className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer ${
                             isClosed 
-                                ? 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-md' // Solid Red for Closed
+                                ? 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-md'
                                 : isWaitlist 
-                                    ? 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-md' // Solid Orange for Waitlist
-                                    : 'bg-[#003C6C] text-white hover:bg-[#002a4d] hover:shadow-md' // Standard Blue for Open
+                                    ? 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-md'
+                                    : 'bg-[#003C6C] text-white hover:bg-[#002a4d] hover:shadow-md'
                         }`}
                     >
                         {isClosed ? (
