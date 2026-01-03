@@ -140,9 +140,14 @@ async function processClass($, el, schoolId) {
     let grading = null;
     let classNumber = null;
     let instructionMode = null;
+    let credits = 5; // Default fallback
 
     // --- DEEP SCRAPE (Details Page) ---
-    const detailsLinkHref = $(el).find('h2 a').attr('href');
+    // TRY MULTIPLE SELECTORS to find the link
+    let detailsLinkHref = $(el).find('h2 a').attr('href');
+    if (!detailsLinkHref) detailsLinkHref = $(el).find('.panel-heading a').attr('href');
+    if (!detailsLinkHref) detailsLinkHref = $(el).find('a').first().attr('href');
+    
     if (detailsLinkHref) {
         try {
             const detailsUrl = `${BASE_URL.replace('index.php', '')}${detailsLinkHref}`;
@@ -151,34 +156,59 @@ async function processClass($, el, schoolId) {
 
             discussions = parseDiscussions(detail$);
 
-            // 0. Get Full Title
-            const fullHeader = detail$('.panel-heading').first().text().trim();
-            const titleParts = fullHeader.split(/[–-]/); 
-            if (titleParts.length > 2) title = titleParts[2].trim(); 
-            else if (titleParts.length > 1) title = titleParts[1].trim(); 
+            // 1. Title Extraction (Robust Strategy)
+            let fullHeader = '';
+            
+            // Iterate H2s to find the one starting with our course code
+            detail$('h2').each((i, h2) => {
+                const text = detail$(h2).text().replace(/\u00A0/g, ' ').trim();
+                if (text.startsWith(code)) {
+                    fullHeader = text;
+                    return false; // Break loop
+                }
+            });
 
-            // 1. Clean Text
+            if (fullHeader) {
+                // Remove the Course Code (e.g. "AM 10")
+                let remaining = fullHeader.substring(code.length).trim();
+                
+                // Remove leading dashes or spaces (e.g. "- ")
+                remaining = remaining.replace(/^[-–\s]+/, '').trim();
+                
+                // Remove Section Number (e.g. "01" or "01A") + trailing spaces
+                remaining = remaining.replace(/^\d+[A-Z]?\s+/, '').trim();
+
+                if (remaining.length > 0) {
+                    title = remaining;
+                }
+            }
+
+            // 2. Clean Text for Metadata
             const panelText = detail$('.panel-body').text().replace(/\s+/g, ' '); 
             
-            // 2. Class Number (Try two methods)
-            // Method A: Look for "Class Number XXXXX" explicitly
-            const classNumMatch = panelText.match(/Class Number\s+(\d{5})/i);
+            // 3. Class Number
+            const classNumMatch = panelText.match(/Class Number\s*:?\s*(\d{5})/i);
             if (classNumMatch) {
                 classNumber = classNumMatch[1];
             } else {
-                // Method B: Fallback - grab from the first row of the details table
                 const possibleNum = detail$('.panel-body .row:first-child .col-xs-6:last-child').text().trim();
                 if (possibleNum && /^\d{5}$/.test(possibleNum)) classNumber = possibleNum;
             }
 
-            // 3. Other Metadata
-            const modeMatch = panelText.match(/Instruction Mode\s+(.+?)\s*(?:Credits|General)/i);
+            // 4. Credits / Units
+            const creditsMatch = panelText.match(/Credits\s*:?\s*(\d+)\s*units?/i);
+            if (creditsMatch) {
+                credits = parseInt(creditsMatch[1]);
+            }
+
+            // 5. Other Metadata
+            const modeMatch = panelText.match(/Instruction Mode\s*:?\s*(.+?)\s*(?:Credits|General)/i);
             if (modeMatch) instructionMode = modeMatch[1].trim();
 
-            const careerMatch = panelText.match(/Career\s+([A-Za-z]+)/i);
+            const careerMatch = panelText.match(/Career\s*:?\s*(Undergraduate|Graduate)/i);
             if (careerMatch) career = careerMatch[1].trim();
 
-            const gradingMatch = panelText.match(/Grading\s+(.+?)\s*Class Number/i);
+            const gradingMatch = panelText.match(/Grading\s*:?\s*(.+?)\s*Class Number/i);
             if (gradingMatch) grading = gradingMatch[1].trim();
 
             const geMatch = panelText.match(/General Education(?:[:\s]*(?:Code\(s\))?[:\s]*)?([A-Z\s,-]+?)(?=\.?\s*Status)/i);
@@ -191,13 +221,14 @@ async function processClass($, el, schoolId) {
             if (prereqMatch) prerequisites = prereqMatch[1].trim();
 
         } catch (err) {
-            // console.log(`Warning: Could not fetch details for ${code}`);
+            // Silently fail on individual class details to keep logs clean
+            // console.log(`[ERROR] Could not fetch details for ${code}: ${err.message}`);
         }
     }
 
     await saveToDatabase({ 
         code, title, section, instructor, meeting, location, status, enrolled, capacity, discussions,
-        geCode, prerequisites, career, grading, classNumber, instructionMode 
+        geCode, prerequisites, career, grading, classNumber, instructionMode, credits
     }, schoolId);
 }
 
@@ -222,8 +253,10 @@ function parseDiscussions(detail$) {
         if (timeMatch) time = timeMatch[1];
         const dayMatch = text.match(/\b(M|Tu|W|Th|F|MW|TuTh|MWF|Sa|Su)\b/);
         if (dayMatch) days = dayMatch[1];
+        
         const locMatch = text.match(/Loc:\s*(.*?)(?=\s+(Enrl|Wait|Staff|$))/);
         if (locMatch) location = locMatch[1].trim();
+        
         const statsMatch = text.match(/Enrl:\s*(\d+)\s*\/\s*(\d+)/);
         if (statsMatch) { enrolled = parseInt(statsMatch[1]); capacity = parseInt(statsMatch[2]); }
 
@@ -246,12 +279,13 @@ async function saveToDatabase(course, schoolId) {
           geCode: course.geCode,
           prerequisites: course.prerequisites,
           career: course.career,
-          grading: course.grading
+          grading: course.grading,
+          credits: course.credits 
         },
         create: {
           code: course.code,
           name: course.title,
-          credits: 5,
+          credits: course.credits, 
           instructor: course.instructor,
           department: course.code.split(' ')[0],
           schoolId: schoolId,
