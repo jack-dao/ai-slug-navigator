@@ -93,15 +93,10 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, isAiActi
     }
   };
 
-  // Helper handles abbreviations
   const formatMetaValue = (type, value) => {
       if (!value) return '---';
-      if (type === 'Career') {
-          return value === 'Undergraduate' ? 'Undergrad' : value;
-      }
-      if (type === 'Grading') {
-          return value === 'Student Option' ? 'Option' : value;
-      }
+      if (type === 'Career') return value === 'Undergraduate' ? 'Undergrad' : value;
+      if (type === 'Grading') return value === 'Student Option' ? 'Option' : value;
       return value;
   };
 
@@ -109,7 +104,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, isAiActi
     <div className={`bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 overflow-visible group/card ${isAiActive ? 'p-0' : ''}`}>
       
       {/* HEADER */}
-      <div className={`${isAiActive ? 'px-4 py-4' : 'px-6 py-5'} bg-white rounded-t-[20px] border-t border-l border-r border-slate-200 border-b border-b-slate-100`}>
+      <div className={`${isAiActive ? 'px-5 py-4' : 'px-6 py-5'} bg-white rounded-t-[20px] border-t border-l border-r border-slate-200 border-b border-b-slate-100`}>
         <div className="flex justify-between items-start mb-3">
             <div>
                 <div className="flex items-center gap-3 mb-1">
@@ -158,91 +153,95 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, isAiActi
           const isLast = index === course.sections.length - 1;
 
           return (
-            <div key={section.id} className={`${isAiActive ? 'p-4' : 'p-6'} hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
-              <div className="flex flex-col lg:flex-row gap-6">
+            <div key={section.id} className={`${isAiActive ? 'p-5' : 'p-6'} hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
+              
+              {/* FLUID LAYOUT: Use flex-wrap to allow natural stacking if space is tight */}
+              <div className="flex flex-wrap gap-6 items-start">
                 
-                {/* LEFT: Metadata */}
-                <div className={`flex-[2] min-w-0 flex flex-col md:flex-row ${isAiActive ? 'gap-4' : 'gap-6'}`}>
+                {/* 1. INFO SECTION (Instructor + Metadata) 
+                    - min-w-[340px]: Prevents crushing. If <340px space, this row wraps.
+                    - flex-grow: Expands to fill available width.
+                */}
+                <div className="flex-grow basis-[340px] min-w-[300px] flex flex-col gap-5">
                     
                     {/* Instructor */}
-                    <div className={`shrink-0 ${isAiActive ? 'w-40' : 'md:w-48'}`}>
+                    <div>
                         <p className="text-[10px] font-bold text-[#003C6C] mb-1">Instructor</p>
-                        <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-start gap-2 group/prof text-left cursor-pointer w-full">
+                        <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-start gap-3 group/prof text-left cursor-pointer w-full">
                             <div className="w-10 h-10 rounded-full bg-[#003C6C]/5 flex items-center justify-center text-[#003C6C] shrink-0">
                                 <User className="w-5 h-5" />
                             </div>
-                            <div className="min-w-0 flex-1">
-                                <span className="block font-bold text-slate-900 group-hover/prof:text-[#003C6C] group-hover/prof:underline decoration-2 underline-offset-2 transition-colors leading-tight">
+                            <div className="min-w-0 flex-1 pt-0.5">
+                                <span className="block font-bold text-slate-900 text-sm group-hover/prof:text-[#003C6C] group-hover/prof:underline decoration-2 underline-offset-2 transition-colors leading-tight">
                                     {formatInstructor(section.instructor)}
                                 </span>
                                 {ratingData ? (
-                                    // FIXED: Stack vertically if AI is active, horizontal otherwise
-                                    <div className={`${isAiActive ? 'flex flex-col items-start gap-0.5' : 'flex items-center gap-2'} mt-0.5`}>
+                                    <div className="flex items-center gap-2 mt-1">
                                         <div className="flex">{renderStars(ratingData.avgRating)}</div>
                                         <span className="text-xs font-bold text-slate-500 whitespace-nowrap">
                                             {ratingData.avgRating} ({ratingData.numRatings})
                                         </span>
                                     </div>
                                 ) : (
-                                    <span className="text-xs font-medium text-slate-400">No ratings</span>
+                                    <span className="text-xs font-medium text-slate-400 mt-1 block">No ratings</span>
                                 )}
                             </div>
                         </button>
                     </div>
 
-                    {/* Metadata Grid */}
-                    <div className="flex-1 grid grid-cols-2 gap-y-3 gap-x-2">
+                    {/* Metadata Grid - Fixed to 2 columns for maximum safety */}
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-6">
                         <div>
                             <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Class Number</p>
-                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900 min-w-0">
+                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                 <Hash className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                <span className="truncate">{section.classNumber || '---'}</span>
+                                <span>{section.classNumber || '---'}</span>
                             </div>
                         </div>
-                        
                         <div>
                             <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Instruction</p>
-                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900 min-w-0">
+                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                 <Monitor className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                <span className="truncate">{section.instructionMode || 'In Person'}</span>
+                                <span>{section.instructionMode || 'In Person'}</span>
                             </div>
                         </div>
-
                         <div>
                             <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Career</p>
-                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900 min-w-0">
+                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                 <GraduationCap className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                <span className="truncate">{formatMetaValue('Career', career || 'Undergraduate')}</span>
+                                <span>{formatMetaValue('Career', career || 'Undergraduate')}</span>
                             </div>
                         </div>
-
                         <div>
                             <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Grading</p>
-                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900 min-w-0">
+                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                 <BookOpen className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                <span className="truncate">{formatMetaValue('Grading', grading ? 'Student Option' : 'Letter')}</span>
+                                <span>{formatMetaValue('Grading', grading ? 'Student Option' : 'Letter')}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* MIDDLE: Schedule */}
-                <div className="flex-1 flex flex-col justify-center border-l border-slate-100 pl-6 border-dashed">
+                {/* 2. SCHEDULE SECTION 
+                    - min-w-[200px]: Keeps it readable.
+                    - flex-grow: Fills space.
+                */}
+                <div className="flex-grow basis-[220px] min-w-[200px] flex flex-col justify-center">
                     <div className="flex items-start gap-4 mb-4">
-                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
                             <Clock className="w-5 h-5" />
                         </div>
                         <div>
                             <p className="font-bold text-slate-900 text-sm">{expandDays(section.days)}</p>
                             <p className="text-xs font-bold text-slate-900 mt-0.5">{formatTime(section.startTime)} - {formatTime(section.endTime)}</p>
                             <div className="flex items-center gap-1.5 mt-1.5 text-xs font-bold text-slate-600">
-                                <MapPin className="w-3 h-3" />
-                                {formatLocation(section.location)}
+                                <MapPin className="w-3 h-3 shrink-0" />
+                                <span className="leading-tight">{formatLocation(section.location)}</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div className="space-y-1.5 w-full max-w-[15rem]">
+                    <div className="space-y-1.5 w-full max-w-[280px]">
                         <div className="flex justify-between items-end">
                             <span className={`text-[10px] font-bold uppercase tracking-wider ${isClosed ? 'text-rose-600' : isWaitlist ? 'text-orange-600' : 'text-[#003C6C]'}`}>
                                 {section.status || 'Open'}
@@ -253,7 +252,8 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, isAiActi
                             </div>
                         </div>
                         
-                        <div className="h-2 w-full bg-slate-200 border border-slate-300 rounded-full overflow-hidden">
+                        {/* High visibility bar */}
+                        <div className="h-2.5 w-full bg-slate-200 border border-slate-300 rounded-full overflow-hidden">
                             <div 
                                 className={`h-full ${isClosed ? 'bg-rose-500' : isWaitlist ? 'bg-orange-500' : 'bg-emerald-500'}`} 
                                 style={{ width: `${fillPercentage}%` }} 
@@ -262,8 +262,11 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, isAiActi
                     </div>
                 </div>
 
-                {/* RIGHT: Actions */}
-                <div className="w-full lg:w-72 flex flex-col gap-2 justify-center">
+                {/* 3. ACTIONS SECTION
+                    - w-full on wrapping (mobile style)
+                    - w-72 on large screens
+                */}
+                <div className="flex-grow basis-[250px] min-w-[220px] sm:w-72 sm:flex-grow-0 flex flex-col gap-2 justify-center">
                     {hasDiscussions && (
                         <div className="relative" ref={openDropdownId === section.id ? dropdownRef : null}>
                             <button 
@@ -273,7 +276,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, isAiActi
                                 }`}
                             >
                                 <span className="truncate">
-                                    {/* FIX: Now shows Start - End time */}
                                     {selectedSub ? `${expandDays(selectedSub.days)} ${formatTime(selectedSub.startTime)} - ${formatTime(selectedSub.endTime)}` : "Select Discussion"}
                                 </span>
                                 <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdownId === section.id ? 'rotate-180' : ''}`} />
