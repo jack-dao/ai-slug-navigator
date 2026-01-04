@@ -61,7 +61,6 @@ const CustomDropdown = ({ value, options, onChange, placeholder, prefix = "" }) 
   );
 };
 
-// --- INTERNAL PROFESSOR MODAL ---
 const ProfessorModal = ({ professor, isOpen, onClose }) => {
   if (!isOpen || !professor) return null;
   const reviews = professor.reviews || [];
@@ -132,7 +131,6 @@ const ProfessorModal = ({ professor, isOpen, onClose }) => {
   );
 };
 
-// --- FILTER SECTION WIDGET ---
 const FilterSection = ({ title, children, isOpen = true }) => {
   const [open, setOpen] = useState(isOpen);
   return (
@@ -163,6 +161,7 @@ const HomePage = ({ user, session }) => {
   const profileDropdownRef = useRef(null);
   
   const [searchQuery, setSearchQuery] = useState('');
+  
   const [filters, setFilters] = useState({
     openOnly: false,
     minRating: 0,
@@ -511,6 +510,51 @@ const HomePage = ({ user, session }) => {
     setIsProfModalOpen(true);
   };
 
+  // --- NEW AI CHAT HANDLER (RAG) ---
+  const handleSendMessage = async (text) => {
+    // 1. Update UI immediately
+    const newMessages = [...chatMessages, { role: 'user', text }];
+    setChatMessages(newMessages);
+    
+    // 2. Add temp loading message
+    const tempMessages = [...newMessages, { role: 'assistant', text: "Thinking... 🐌" }];
+    setChatMessages(tempMessages);
+
+    try {
+      // 3. Prepare Context (Current View + User Schedule)
+      const contextSlice = processedCourses.slice(0, 50).map(c => ({
+        code: c.code,
+        name: c.name,
+        credits: c.credits,
+        sections: c.sections?.map(s => ({
+            instructor: s.instructor,
+            days: s.days,
+            startTime: s.startTime
+        }))
+      }));
+
+      // 4. API Call
+      const response = await fetch('http://localhost:3000/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          contextCourses: contextSlice,
+          userSchedule: selectedCourses
+        })
+      });
+
+      const data = await response.json();
+
+      // 5. Update UI with Real Answer
+      setChatMessages([...newMessages, { role: 'assistant', text: data.reply }]);
+
+    } catch (err) {
+      console.error("Chat Error:", err);
+      setChatMessages([...newMessages, { role: 'assistant', text: "Sorry, I lost connection to the server. 🧠🚫" }]);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-white flex flex-col font-sans selection:bg-[#003C6C] selection:text-white relative">
       
@@ -586,7 +630,7 @@ const HomePage = ({ user, session }) => {
         </div>
       </header>
 
-      {/* MAIN CONTAINER: Standard flex layout. No forced huge widths. */}
+      {/* MAIN CONTAINER */}
       <div className="flex flex-row w-full min-h-[calc(100vh-80px)]">
         
         {/* LEFT CONTENT AREA */}
@@ -602,16 +646,15 @@ const HomePage = ({ user, session }) => {
                                 <RotateCcw className="w-3 h-3" /> Reset
                             </button>
                         </div>
-                        {/* ... Filters content ... */}
                         <FilterSection title="Department">
                             <CustomDropdown 
                                 value={filters.department !== 'All Departments' ? filters.department : ''}
                                 placeholder="All Departments"
-                                // FIX: Use DEPARTMENTS from our new file
                                 options={DEPARTMENTS.map(d => d.name)}
                                 onChange={(val) => setFilters({...filters, department: val})}
                             />
                         </FilterSection>
+                        {/* ... Other Filters (Units, Days, etc. - kept as is) ... */}
                         <FilterSection title="Units">
                             <div className="px-2 py-4">
                                 <div className="relative h-4 flex items-center">
@@ -668,6 +711,7 @@ const HomePage = ({ user, session }) => {
                     </aside>
                 )}
 
+                {/* MAIN CONTENT AREA */}
                 <main className="flex-1 min-w-0 bg-white relative z-0">
                     <div className="px-8 py-6 border-b border-slate-100 bg-white sticky top-[80px] z-30">
                         <div className="flex gap-4 mb-4">
@@ -695,7 +739,6 @@ const HomePage = ({ user, session }) => {
                         </div>
                         <div className="flex items-center justify-between"><span className="font-bold text-sm text-slate-800">{processedCourses.length} Results</span></div>
                     </div>
-                    {/* FIX: PASS sortOption TO COURSE CARD */}
                     <div className="p-8 grid grid-cols-1 gap-6">
                         {currentCourses.map(course => (
                             <CourseCard 
@@ -704,7 +747,7 @@ const HomePage = ({ user, session }) => {
                                 professorRatings={professorRatings} 
                                 onAdd={addCourse} 
                                 onShowProfessor={viewProfessorDetails} 
-                                sortOption={filters.sort} // <--- PASS IT HERE
+                                sortOption={filters.sort} 
                             />
                         ))}
                     </div>
@@ -766,10 +809,16 @@ const HomePage = ({ user, session }) => {
         {/* AI SIDEBAR - STICKY AND VISIBLE */}
         {showAIChat && (
             <div 
-                className="w-[350px] bg-white border-l border-[#FDC700] shadow-xl shrink-0 h-[calc(100vh-80px)] sticky top-[80px] z-50"
+                className="w-[400px] bg-white border-l border-[#FDC700] shadow-xl shrink-0 h-[calc(100vh-80px)] sticky top-[80px] z-50"
             >
                  <div className="w-full h-full">
-                    <ChatSidebar isOpen={true} onClose={() => setShowAIChat(false)} messages={chatMessages} onSendMessage={(text) => setChatMessages([...chatMessages, {role: 'user', text}, {role: 'assistant', text: 'How can I help?'}])} schoolName={selectedSchool.shortName} />
+                    <ChatSidebar 
+                        isOpen={true} 
+                        onClose={() => setShowAIChat(false)} 
+                        messages={chatMessages} 
+                        onSendMessage={handleSendMessage} // <--- HOOKED UP!
+                        schoolName={selectedSchool.shortName} 
+                    />
                  </div>
             </div>
         )}
