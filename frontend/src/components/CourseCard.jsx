@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Clock, Plus, Star, MapPin, ChevronDown, RotateCcw, User, Hash, Lock, BookOpen, GraduationCap, Monitor, AlertCircle, Hourglass } from 'lucide-react';
 
-const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
+const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOption }) => {
   const [selectedSubSections, setSelectedSubSections] = useState({});
   const [errors, setErrors] = useState({});
   const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -18,6 +18,30 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // --- INTERNAL SORTING LOGIC ---
+  const sortedSections = useMemo(() => {
+    // Clone array to avoid mutating props
+    let sections = [...(course.sections || [])];
+
+    if (sortOption === 'Rating') {
+        sections.sort((a, b) => {
+            // Get ratings (default to -1 if no rating so they go to bottom)
+            const ratingA = professorRatings?.[a.instructor]?.avgRating || -1;
+            const ratingB = professorRatings?.[b.instructor]?.avgRating || -1;
+            return ratingB - ratingA; // Descending (Higher is better)
+        });
+    } else if (sortOption === 'Difficulty') {
+        sections.sort((a, b) => {
+            // Get difficulty (default to 10 if no rating so they go to bottom)
+            const diffA = professorRatings?.[a.instructor]?.avgDifficulty || 10;
+            const diffB = professorRatings?.[b.instructor]?.avgDifficulty || 10;
+            return diffA - diffB; // Ascending (Lower is easier)
+        });
+    }
+    // Default ('Best Match') keeps original order (usually Section Number)
+    return sections;
+  }, [course.sections, professorRatings, sortOption]);
 
   const formatTime = (time) => time ? time.replace(/^0/, '') : '';
   const formatInstructor = (name) => name ? name.replace(/,/g, ', ') : 'Staff';
@@ -101,7 +125,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
   };
 
   return (
-    // FIX: Removed fixed width. Added 'w-full' to adapt to the container.
     <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 overflow-visible group/card w-full">
       
       {/* HEADER */}
@@ -139,7 +162,8 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
 
       {/* SECTIONS */}
       <div className="divide-y divide-slate-200 border-l border-r border-b border-slate-200 rounded-b-[20px]">
-        {course.sections?.map((section, index) => {
+        {/* FIX: Map over sortedSections instead of course.sections */}
+        {sortedSections.map((section, index) => {
           const hasDiscussions = section.subSections?.length > 0;
           const ratingData = professorRatings?.[section.instructor];
           const selectedSubId = selectedSubSections[section.id];
@@ -151,20 +175,15 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
           const fillPercentage = Math.min((enrolled / capacity) * 100, 100);
           const isClosed = section.status === 'Closed';
           const isWaitlist = section.status?.includes('Wait');
-          const isLast = index === course.sections.length - 1;
+          const isLast = index === sortedSections.length - 1;
 
           return (
             <div key={section.id} className={`p-6 hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
               
-              {/* RESPONSIVE LAYOUT: flex-wrap allows items to drop to the next line if space runs out */}
               <div className="flex flex-wrap gap-6">
                 
-                {/* 1. LEFT: Metadata
-                    - flex-grow-[10]: Takes up the most space (fills row on laptop)
-                    - min-w-[380px]: Prevents text crushing
-                */}
+                {/* 1. LEFT: Metadata */}
                 <div className="flex-[10_1_380px] flex flex-row gap-6">
-                    {/* Instructor */}
                     <div className="w-[150px] shrink-0">
                         <p className="text-[10px] font-bold text-[#003C6C] mb-1">Instructor</p>
                         <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-start gap-2 group/prof text-left cursor-pointer w-full">
@@ -189,7 +208,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                         </button>
                     </div>
 
-                    {/* Metadata Grid */}
                     <div className="flex-1 grid grid-cols-2 gap-y-3 gap-x-4 min-w-[200px]">
                         <div>
                             <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Class Number</p>
@@ -222,11 +240,8 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                     </div>
                 </div>
 
-                {/* 2. MIDDLE: Schedule
-                    - flex-grow-[1]: Standard growth
-                    - min-w-[220px]: Prevents crushing
-                */}
-                <div className="flex-[1_1_220px] flex flex-col justify-center border-l border-slate-100 pl-6 border-dashed">
+                {/* 2. MIDDLE: Schedule */}
+                <div className="flex-[1_1_220px] flex flex-col justify-center border-l border-slate-100 pl-6 border-dashed min-w-[200px]">
                     <div className="flex items-start gap-4 mb-4">
                         <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
                             <Clock className="w-5 h-5" />
@@ -261,12 +276,10 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                     </div>
                 </div>
 
-                {/* 3. RIGHT: Actions
-                    - flex-grow-[1]: Standard growth
-                    - min-w-[220px]: Prevents crushing
-                */}
-                <div className="flex-[1_1_220px] flex flex-col gap-2 justify-center">
+                {/* 3. RIGHT: Actions */}
+                <div className="flex-[1_1_220px] flex flex-col gap-2 justify-center min-w-[220px]">
                     {hasDiscussions && (
+                        /* FIX: Dynamic z-index for stacking context */
                         <div className={`relative ${openDropdownId === section.id ? 'z-50' : 'z-0'}`} ref={openDropdownId === section.id ? dropdownRef : null}>
                             <button 
                                 onClick={() => toggleDropdown(section.id)} 
@@ -281,7 +294,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor }) => {
                             </button>
                             
                             {openDropdownId === section.id && (
-                                <div className="absolute top-full mt-2 left-0 w-full bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden">
+                                <div className="absolute top-full mt-2 left-0 w-full bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden">
                                     <div className="max-h-96 overflow-y-auto custom-scrollbar p-1">
                                         {selectedSubId && (
                                             <button onClick={() => handleSelectDiscussion(section.id, null)} className="w-full text-left px-3 py-2.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-lg mb-1 flex items-center gap-2 cursor-pointer">

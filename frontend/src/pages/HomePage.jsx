@@ -2,6 +2,9 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Calendar, GraduationCap, BookOpen, Save, CheckCircle, AlertCircle, LogOut, Bot, RotateCcw, MessageSquare, Tag, Flame, ThumbsUp, TrendingUp, X, ChevronDown, ChevronUp, Check, Star, User, LogIn, Filter } from 'lucide-react';
 import { supabase } from '../supabase'; 
 
+// IMPORT DEPARTMENTS
+import { DEPARTMENTS } from '../utils/departments';
+
 // COMPONENTS
 import CourseCard from '../components/CourseCard';
 import ChatSidebar from '../components/ChatSidebar';
@@ -9,7 +12,7 @@ import AuthModal from '../components/AuthModal';
 import CalendarView from '../components/CalendarView';
 import ScheduleList from '../components/ScheduleList';
 
-// --- HELPER: CUSTOM DROPDOWN COMPONENT ---
+// ... (Helper Components: CustomDropdown, ProfessorModal, FilterSection - KEEP AS IS) ...
 const CustomDropdown = ({ value, options, onChange, placeholder, prefix = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef(null);
@@ -160,7 +163,6 @@ const HomePage = ({ user, session }) => {
   const profileDropdownRef = useRef(null);
   
   const [searchQuery, setSearchQuery] = useState('');
-  
   const [filters, setFilters] = useState({
     openOnly: false,
     minRating: 0,
@@ -307,34 +309,42 @@ const HomePage = ({ user, session }) => {
   };
 
   const processedCourses = useMemo(() => {
-    const pisaSort = (a, b) => a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' });
-    let results = [...availableCourses].sort(pisaSort);
+    let results = [...availableCourses];
+    const lowerQuery = searchQuery.toLowerCase();
 
-    if (searchQuery) {
-        const lowerQuery = searchQuery.toLowerCase();
-        results = results.map(course => {
-          let score = 0;
-          if (course.code.toLowerCase() === lowerQuery) score += 1000;
-          else if (course.code.toLowerCase().includes(lowerQuery)) score += 100;
-          const instructorMatch = (course.sections || []).some(sec => (sec.instructor || "").toLowerCase().includes(lowerQuery));
-          if (instructorMatch) score += 80;
-          if (course.name.toLowerCase().includes(lowerQuery)) score += 10;
-          return { course, score };
-        }).filter(item => item.score > 0).sort((a, b) => b.score - a.score || pisaSort(a.course, b.course)).map(item => item.course);
+    // 1. DEPARTMENT FILTER
+    if (filters.department !== 'All Departments') {
+        const deptObj = DEPARTMENTS.find(d => d.name === filters.department);
+        if (deptObj && deptObj.prefix) {
+            results = results.filter(course => course.code.startsWith(deptObj.prefix));
+        }
     }
 
-    if (filters.openOnly) results = results.filter(course => course.sections?.some(sec => sec.status !== 'Closed' && sec.status !== 'Wait List'));
-    if (filters.minRating > 0) results = results.filter(course => course.sections?.some(sec => { const stats = professorRatings[sec.instructor]; return stats && stats.avgRating >= filters.minRating; }));
-    
-    if (filters.minUnits > 0) results = results.filter(course => parseInt(course.credits) === filters.minUnits);
+    // 2. SEARCH
+    if (searchQuery) {
+        results = results.map(course => {
+            let score = 0;
+            if (course.code.toLowerCase() === lowerQuery) score += 1000;
+            else if (course.code.toLowerCase().includes(lowerQuery)) score += 100;
+            if (course.sections?.some(sec => (sec.instructor || "").toLowerCase().includes(lowerQuery))) score += 50;
+            if (course.name.toLowerCase().includes(lowerQuery)) score += 10;
+            return { ...course, _searchScore: score };
+        }).filter(c => c._searchScore > 0);
+    }
 
+    // 3. COMMON FILTERS
+    if (filters.openOnly) {
+        results = results.filter(course => course.sections?.some(sec => sec.status !== 'Closed' && sec.status !== 'Wait List'));
+    }
+    if (filters.minUnits > 0) {
+        results = results.filter(course => parseInt(course.credits) === filters.minUnits);
+    }
     if (filters.days.length > 0) {
         results = results.filter(course => course.sections?.some(sec => {
             const secDays = sec.days || ""; 
             return filters.days.some(day => secDays.includes(day));
         }));
     }
-
     if (filters.timeRange[0] > 7 || filters.timeRange[1] < 23) {
         results = results.filter(course => course.sections?.some(sec => {
             const start = parseTime(sec.startTime);
@@ -342,6 +352,53 @@ const HomePage = ({ user, session }) => {
             if (!start || !end) return false;
             return start >= filters.timeRange[0] && end <= filters.timeRange[1];
         }));
+    }
+    if (filters.minRating > 0) {
+        results = results.filter(course => course.sections?.some(sec => {
+            const stats = professorRatings[sec.instructor];
+            return stats && stats.avgRating >= filters.minRating;
+        }));
+    }
+
+    // 4. SORTING
+    const getBestStats = (course) => {
+        let maxRating = -1;
+        let minDifficulty = 6;
+        let hasData = false;
+
+        course.sections?.forEach(sec => {
+            const stats = professorRatings[sec.instructor];
+            if (stats) {
+                hasData = true;
+                if (stats.avgRating > maxRating) maxRating = stats.avgRating;
+                if (stats.avgDifficulty < minDifficulty && stats.avgDifficulty > 0) minDifficulty = stats.avgDifficulty;
+            }
+        });
+        return { maxRating, minDifficulty, hasData };
+    };
+
+    if (filters.sort === 'Rating') {
+        results.sort((a, b) => {
+            const statsA = getBestStats(a);
+            const statsB = getBestStats(b);
+            if (!statsA.hasData) return 1; 
+            if (!statsB.hasData) return -1;
+            return statsB.maxRating - statsA.maxRating; 
+        });
+    } else if (filters.sort === 'Difficulty') {
+        results.sort((a, b) => {
+            const statsA = getBestStats(a);
+            const statsB = getBestStats(b);
+            if (!statsA.hasData) return 1;
+            if (!statsB.hasData) return -1;
+            return statsA.minDifficulty - statsB.minDifficulty;
+        });
+    } else {
+        if (searchQuery) {
+            results.sort((a, b) => b._searchScore - a._searchScore); 
+        } else {
+            results.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' }));
+        }
     }
 
     return results;
@@ -356,6 +413,7 @@ const HomePage = ({ user, session }) => {
     setTimeout(() => { setNotification(prev => (prev?.message === message ? null : prev)); }, 3000);
   };
 
+  // ... (Keep existing conflict and schedule functions) ...
   const checkForConflicts = (newSection, existingCourses, ignoreCode) => {
     const getSegments = (sec) => {
         const segments = [];
@@ -549,7 +607,8 @@ const HomePage = ({ user, session }) => {
                             <CustomDropdown 
                                 value={filters.department !== 'All Departments' ? filters.department : ''}
                                 placeholder="All Departments"
-                                options={['All Departments', 'Computer Science', 'Mathematics', 'Psychology']}
+                                // FIX: Use DEPARTMENTS from our new file
+                                options={DEPARTMENTS.map(d => d.name)}
                                 onChange={(val) => setFilters({...filters, department: val})}
                             />
                         </FilterSection>
@@ -609,7 +668,6 @@ const HomePage = ({ user, session }) => {
                     </aside>
                 )}
 
-                {/* MAIN CONTENT AREA */}
                 <main className="flex-1 min-w-0 bg-white relative z-0">
                     <div className="px-8 py-6 border-b border-slate-100 bg-white sticky top-[80px] z-30">
                         <div className="flex gap-4 mb-4">
@@ -637,8 +695,18 @@ const HomePage = ({ user, session }) => {
                         </div>
                         <div className="flex items-center justify-between"><span className="font-bold text-sm text-slate-800">{processedCourses.length} Results</span></div>
                     </div>
+                    {/* FIX: PASS sortOption TO COURSE CARD */}
                     <div className="p-8 grid grid-cols-1 gap-6">
-                        {currentCourses.map(course => <CourseCard key={course.id} course={course} professorRatings={professorRatings} onAdd={addCourse} onShowProfessor={viewProfessorDetails} />)}
+                        {currentCourses.map(course => (
+                            <CourseCard 
+                                key={course.id} 
+                                course={course} 
+                                professorRatings={professorRatings} 
+                                onAdd={addCourse} 
+                                onShowProfessor={viewProfessorDetails} 
+                                sortOption={filters.sort} // <--- PASS IT HERE
+                            />
+                        ))}
                     </div>
                     {/* ... (Pagination) ... */}
                     {processedCourses.length > ITEMS_PER_PAGE && (
@@ -672,7 +740,7 @@ const HomePage = ({ user, session }) => {
               </>
             )}
 
-            {/* Schedule View */}
+            {/* Schedule View ... */}
             {activeTab === 'schedule' && (
                 <div className="flex flex-1 h-[calc(100vh-80px)]">
                     <div className="w-[400px] shrink-0 border-r border-slate-100 flex flex-col z-10 bg-white">
@@ -695,15 +763,10 @@ const HomePage = ({ user, session }) => {
             )}
         </div>
 
-        {/* AI SIDEBAR - STICKY AND VISIBLE
-            - sticky: Sticks to top of viewport when scrolling main content
-            - top-[80px]: Offsets it by header height
-            - h-[calc(100vh-80px)]: Fills the rest of the height
-            - flex-shrink-0: prevents squashing
-        */}
+        {/* AI SIDEBAR - STICKY AND VISIBLE */}
         {showAIChat && (
             <div 
-                className="w-[400px] bg-white border-l border-[#FDC700] shadow-xl shrink-0 h-[calc(100vh-80px)] sticky top-[80px] z-50"
+                className="w-[350px] bg-white border-l border-[#FDC700] shadow-xl shrink-0 h-[calc(100vh-80px)] sticky top-[80px] z-50"
             >
                  <div className="w-full h-full">
                     <ChatSidebar isOpen={true} onClose={() => setShowAIChat(false)} messages={chatMessages} onSendMessage={(text) => setChatMessages([...chatMessages, {role: 'user', text}, {role: 'assistant', text: 'How can I help?'}])} schoolName={selectedSchool.shortName} />
