@@ -182,7 +182,7 @@ const HomePage = ({ user, session }) => {
   
   const [showAIChat, setShowAIChat] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
-  const [isChatLoading, setIsChatLoading] = useState([]);
+  const [isChatLoading, setIsChatLoading] = useState(false);
   
   const [selectedProfessor, setSelectedProfessor] = useState(null);
   const [isProfModalOpen, setIsProfModalOpen] = useState(false);
@@ -571,7 +571,7 @@ const HomePage = ({ user, session }) => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-white flex flex-col font-sans selection:bg-[#003C6C] selection:text-white relative">
+    <div className="min-h-screen w-full bg-white flex flex-col font-sans selection:bg-[#FDC700] selection:text-white relative">
       
       {/* Notifications and Modals */}
       {notification && (
