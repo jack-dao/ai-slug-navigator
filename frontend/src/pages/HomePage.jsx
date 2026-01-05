@@ -553,7 +553,12 @@ const HomePage = ({ user, session }) => {
         body: JSON.stringify({
           message: text,
           contextCourses: contextSlice,
-          userSchedule: selectedCourses
+          userSchedule: selectedCourses.map(c => ({
+              code: c.code,
+              name: c.name,
+              days: c.selectedSection?.days || 'TBA',
+              times: c.selectedSection?.startTime ? `${c.selectedSection.startTime}-${c.selectedSection.endTime}` : 'TBA'
+          }))
         })
       });
 
