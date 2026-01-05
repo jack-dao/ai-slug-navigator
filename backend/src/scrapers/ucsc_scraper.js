@@ -78,7 +78,7 @@ async function scrapeFast() {
     
     console.log("   ✅ Professors synced instantly. Starting class scrape...");
 
-    const BATCH_SIZE = 20; 
+    const BATCH_SIZE = 10; 
     const batches = chunk(panels, BATCH_SIZE);
     let processedCount = 0;
 
@@ -135,15 +135,12 @@ async function processClass($, el, schoolId) {
     let geCode = null;
     let prerequisites = null;
     
-    // New Fields
     let career = null;
     let grading = null;
     let classNumber = null;
     let instructionMode = null;
     let credits = 5; // Default fallback
 
-    // --- DEEP SCRAPE (Details Page) ---
-    // TRY MULTIPLE SELECTORS to find the link
     let detailsLinkHref = $(el).find('h2 a').attr('href');
     if (!detailsLinkHref) detailsLinkHref = $(el).find('.panel-heading a').attr('href');
     if (!detailsLinkHref) detailsLinkHref = $(el).find('a').first().attr('href');
@@ -156,10 +153,8 @@ async function processClass($, el, schoolId) {
 
             discussions = parseDiscussions(detail$);
 
-            // 1. Title Extraction (Robust Strategy)
             let fullHeader = '';
             
-            // Iterate H2s to find the one starting with our course code
             detail$('h2').each((i, h2) => {
                 const text = detail$(h2).text().replace(/\u00A0/g, ' ').trim();
                 if (text.startsWith(code)) {
@@ -169,13 +164,10 @@ async function processClass($, el, schoolId) {
             });
 
             if (fullHeader) {
-                // Remove the Course Code (e.g. "AM 10")
                 let remaining = fullHeader.substring(code.length).trim();
                 
-                // Remove leading dashes or spaces (e.g. "- ")
                 remaining = remaining.replace(/^[-–\s]+/, '').trim();
                 
-                // Remove Section Number (e.g. "01" or "01A") + trailing spaces
                 remaining = remaining.replace(/^\d+[A-Z]?\s+/, '').trim();
 
                 if (remaining.length > 0) {
@@ -183,10 +175,8 @@ async function processClass($, el, schoolId) {
                 }
             }
 
-            // 2. Clean Text for Metadata
             const panelText = detail$('.panel-body').text().replace(/\s+/g, ' '); 
             
-            // 3. Class Number
             const classNumMatch = panelText.match(/Class Number\s*:?\s*(\d{5})/i);
             if (classNumMatch) {
                 classNumber = classNumMatch[1];
@@ -195,13 +185,11 @@ async function processClass($, el, schoolId) {
                 if (possibleNum && /^\d{5}$/.test(possibleNum)) classNumber = possibleNum;
             }
 
-            // 4. Credits / Units
             const creditsMatch = panelText.match(/Credits\s*:?\s*(\d+)\s*units?/i);
             if (creditsMatch) {
                 credits = parseInt(creditsMatch[1]);
             }
 
-            // 5. Other Metadata
             const modeMatch = panelText.match(/Instruction Mode\s*:?\s*(.+?)\s*(?:Credits|General)/i);
             if (modeMatch) instructionMode = modeMatch[1].trim();
 
@@ -221,7 +209,6 @@ async function processClass($, el, schoolId) {
             if (prereqMatch) prerequisites = prereqMatch[1].trim();
 
         } catch (err) {
-            // Silently fail on individual class details to keep logs clean
             // console.log(`[ERROR] Could not fetch details for ${code}: ${err.message}`);
         }
     }
