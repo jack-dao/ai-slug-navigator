@@ -182,6 +182,7 @@ const HomePage = ({ user, session }) => {
   
   const [showAIChat, setShowAIChat] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
+  const [isChatLoading, setIsChatLoading] = useState([]);
   
   const [selectedProfessor, setSelectedProfessor] = useState(null);
   const [isProfModalOpen, setIsProfModalOpen] = useState(false);
@@ -512,6 +513,7 @@ const HomePage = ({ user, session }) => {
 
   // --- NEW AI CHAT HANDLER (RAG) ---
   const handleSendMessage = async (text) => {
+    setIsChatLoading(true);
     // 1. Update UI immediately
     const newMessages = [...chatMessages, { role: 'user', text }];
     setChatMessages(newMessages);
@@ -522,15 +524,26 @@ const HomePage = ({ user, session }) => {
 
     try {
       // 3. Prepare Context (Current View + User Schedule)
-      const contextSlice = processedCourses.slice(0, 50).map(c => ({
+      const contextSlice = availableCourses.map(c => ({
         code: c.code,
         name: c.name,
         credits: c.credits,
-        sections: c.sections?.map(s => ({
-            instructor: s.instructor,
-            days: s.days,
-            startTime: s.startTime
-        }))
+        prerequisites: c.prerequisites, 
+        geCode: c.geCode,
+        
+        sections: c.sections?.map(s => {
+            const stats = professorRatings[s.instructor];
+            return {
+                instructor: s.instructor,
+                rating: stats ? stats.avgRating : "N/A",
+                difficulty: stats ? stats.avgDifficulty : "N/A",
+                days: s.days,
+                startTime: s.startTime,
+                endTime: s.endTime,
+                location: s.location,
+                status: s.status 
+            };
+        })
       }));
 
       // 4. API Call
@@ -552,6 +565,8 @@ const HomePage = ({ user, session }) => {
     } catch (err) {
       console.error("Chat Error:", err);
       setChatMessages([...newMessages, { role: 'assistant', text: "Sorry, I lost connection to the server. 🧠🚫" }]);
+    } finally {
+      setIsChatLoading(false);
     }
   };
 
@@ -816,8 +831,9 @@ const HomePage = ({ user, session }) => {
                         isOpen={true} 
                         onClose={() => setShowAIChat(false)} 
                         messages={chatMessages} 
-                        onSendMessage={handleSendMessage} // <--- HOOKED UP!
+                        onSendMessage={handleSendMessage} 
                         schoolName={selectedSchool.shortName} 
+                        isLoading={isChatLoading}
                     />
                  </div>
             </div>

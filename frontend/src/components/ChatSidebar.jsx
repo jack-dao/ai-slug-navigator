@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'; 
 import { X, Bot, Send, Sparkles, ArrowRight } from 'lucide-react'; 
+import ReactMarkdown from 'react-markdown'; // <--- 1. Import this
 
 const ChatSidebar = ({ isOpen, onClose, messages, onSendMessage, schoolName }) => {
   const [input, setInput] = React.useState('');
@@ -26,7 +27,6 @@ const ChatSidebar = ({ isOpen, onClose, messages, onSendMessage, schoolName }) =
           </div>
           <div>
             <h3 className="font-bold text-white text-base tracking-tight">Sammy AI</h3>
-            {/* FIX: Title Case */}
             <p className="text-xs font-bold text-blue-200">Academic Advisor</p>
           </div>
         </div>
@@ -49,7 +49,6 @@ const ChatSidebar = ({ isOpen, onClose, messages, onSendMessage, schoolName }) =
                 </div>
 
                 <div className="space-y-3">
-                    {/* FIX: Title Case */}
                     <p className="text-xs font-bold text-slate-400 ml-1 mb-2">Suggested Prompts</p>
                     
                     <button 
@@ -91,7 +90,15 @@ const ChatSidebar = ({ isOpen, onClose, messages, onSendMessage, schoolName }) =
                 {messages.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] rounded-2xl p-4 text-sm font-medium leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-[#003C6C] text-white rounded-br-sm' : 'bg-white text-slate-700 border border-slate-200 rounded-bl-sm'}`}>
-                      <p>{msg.text}</p>
+                      {/* 2. RENDER MARKDOWN FOR ASSISTANT */}
+                      {msg.role === 'user' ? (
+                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                      ) : (
+                          // These classes style the lists and paragraphs nicely
+                          <div className="prose prose-sm max-w-none text-slate-700 [&>ul]:list-disc [&>ul]:pl-4 [&>ol]:list-decimal [&>ol]:pl-4 [&_strong]:text-[#003C6C]">
+                             <ReactMarkdown>{msg.text}</ReactMarkdown>
+                          </div>
+                      )}
                     </div>
                   </div>
                 ))}
