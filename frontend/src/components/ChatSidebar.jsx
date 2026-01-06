@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react'; 
-import { X, Bot, Send, Sparkles, ArrowRight } from 'lucide-react'; 
+import { X, Send, Sparkles, ArrowRight } from 'lucide-react'; 
 import ReactMarkdown from 'react-markdown'; 
+import sammyChat from '../assets/sammy-chat.png'; 
 
-// 1. ADD 'isLoading' HERE
 const ChatSidebar = ({ isOpen, onClose, messages, onSendMessage, schoolName, isLoading }) => {
   const [input, setInput] = React.useState('');
   const chatContainerRef = useRef(null);
@@ -14,7 +14,6 @@ const ChatSidebar = ({ isOpen, onClose, messages, onSendMessage, schoolName, isL
   }, [messages]);
 
   const handleSend = () => {
-    // 2. BLOCK SENDING IF LOADING
     if (!input.trim() || isLoading) return;
     onSendMessage(input); 
     setInput('');         
@@ -22,18 +21,25 @@ const ChatSidebar = ({ isOpen, onClose, messages, onSendMessage, schoolName, isL
   
   return (
     <div className="w-full h-full bg-slate-50 flex flex-col">
-      <div className="p-6 border-b border-[#FDC700] bg-gradient-to-r from-[#003C6C] to-[#00508c] flex items-center justify-between shrink-0 shadow-sm relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20 shadow-inner backdrop-blur-sm">
-            <Bot className="w-6 h-6 text-[#FDC700]" />
-          </div>
-          <div>
-            <h3 className="font-bold text-white text-base tracking-tight">Sammy AI</h3>
+      {/* HEADER SECTION - Overflow Visible to let Sammy pop out */}
+      <div className="p-6 border-b border-[#FDC700] bg-gradient-to-r from-[#003C6C] to-[#00508c] flex items-center justify-between shrink-0 shadow-sm relative z-10 overflow-visible h-[88px]">
+        
+        <div className="flex items-center pl-24 relative w-full"> {/* Added left padding for image */}
+          {/* ✅ UPDATED: Massive Sammy (160px) positioned absolutely */}
+          <img 
+            src={sammyChat} 
+            alt="Sammy" 
+            className="absolute -left-6 top-1/2 -translate-y-1/2 w-40 h-40 object-contain drop-shadow-2xl hover:scale-105 transition-transform z-20 pointer-events-none" 
+          />
+          
+          <div className="relative z-10">
+            <h3 className="font-bold text-white text-xl tracking-tight">Sammy AI</h3>
             <p className="text-xs font-bold text-blue-200">Academic Advisor</p>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-white/70 hover:text-white">
-          <X className="w-5 h-5" />
+
+        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-white/70 hover:text-white z-30">
+          <X className="w-6 h-6" />
         </button>
       </div>
 
@@ -53,7 +59,6 @@ const ChatSidebar = ({ isOpen, onClose, messages, onSendMessage, schoolName, isL
                 <div className="space-y-3">
                     <p className="text-xs font-bold text-slate-400 ml-1 mb-2">Suggested Prompts</p>
                     
-                    {/* 3. DISABLE PROMPTS IF LOADING */}
                     <button 
                         onClick={() => !isLoading && onSendMessage("What is an easy GE to take that fits in with my schedule?")} 
                         className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all group flex items-start gap-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -95,7 +100,6 @@ const ChatSidebar = ({ isOpen, onClose, messages, onSendMessage, schoolName, isL
             <div className="space-y-6">
                 {messages.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    {/* 4. ADD 'select-text' CLASS HERE */}
                     <div className={`select-text max-w-[85%] rounded-2xl p-4 text-sm font-medium leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-[#003C6C] text-white rounded-br-sm' : 'bg-white text-slate-700 border border-slate-200 rounded-bl-sm'}`}>
                       {msg.role === 'user' ? (
                           <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -117,20 +121,17 @@ const ChatSidebar = ({ isOpen, onClose, messages, onSendMessage, schoolName, isL
             type="text" 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
-            // 5. PREVENT ENTER KEY IF LOADING
             onKeyDown={(e) => { 
                 if (e.key === 'Enter') { 
                     e.preventDefault(); 
                     if (!isLoading) handleSend(); 
                 } 
             }} 
-            // 6. UPDATE PLACEHOLDER
             placeholder={isLoading ? "Sammy is thinking..." : "Ask a question..."} 
             className="flex-1 pl-5 pr-12 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-[#003C6C] focus:ring-0 outline-none transition-all text-sm font-bold text-slate-700 placeholder:text-slate-400" 
           />
           <button 
             onClick={handleSend} 
-            // 7. DISABLE BUTTON IF LOADING
             disabled={!input.trim() || isLoading} 
             className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#FDC700] text-[#003C6C] rounded-xl hover:bg-[#e5b600] transition-all shadow-sm active:scale-95 disabled:opacity-0 disabled:scale-50"
           >
