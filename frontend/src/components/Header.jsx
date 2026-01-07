@@ -36,19 +36,29 @@ const Header = ({
   return (
     <header className="bg-[#003C6C] border-b border-[#FDC700] sticky top-0 z-[60] shadow-xl shrink-0 h-[80px]">
       <div className="w-full h-full px-8 grid grid-cols-[auto_1fr_auto] items-center gap-8">
-        {/* LEFT: Logo Area (pull text closer to logo) */}
+        {/* LEFT: Logo Area */}
         <div className="flex items-center gap-1">
           <img
             src={compassLogo}
             alt="AI Slug Navigator"
             className="h-[104px] w-auto object-contain drop-shadow-md -my-3 relative z-10 top-[2px] -mr-7"
           />
+
           <div className="leading-none -ml-1">
             <h1 className="text-2xl font-bold text-white tracking-tight leading-none">
               AI Slug Navigator
             </h1>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-blue-100 mt-1">
-              <GraduationCap className="w-3 h-3 text-[#FDC700]" /> {selectedSchool.term}
+
+            {/* UC Santa Cruz + Term (no container, with divider) */}
+            <div className="mt-1.5 flex items-center gap-2 text-[11px] font-extrabold text-blue-100">
+              <span className="inline-flex items-center gap-1.5">
+                <GraduationCap className="w-3.5 h-3.5 text-[#FDC700]" />
+                <span>UC Santa Cruz</span>
+              </span>
+
+              <span className="h-3 w-px bg-white/25" />
+
+              <span className="tracking-wide text-blue-50/95">{selectedSchool.term}</span>
             </div>
           </div>
         </div>
