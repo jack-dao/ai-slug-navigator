@@ -1,7 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 export const useSchedule = (user, session, availableCourses) => {
   const [selectedCourses, setSelectedCourses] = useState([]);
+
+  // --- NEW: Calculate Total Units ---
+  const totalUnits = useMemo(() => {
+    return selectedCourses.reduce((acc, course) => {
+      // Parse "5" or "5 units" -> 5
+      const units = parseInt(course.credits || 0); 
+      return acc + (isNaN(units) ? 0 : units);
+    }, 0);
+  }, [selectedCourses]);
 
   // Helper functions
   const parseTime = (timeStr) => {
@@ -89,5 +98,5 @@ export const useSchedule = (user, session, availableCourses) => {
     fetchUserSchedule();
   }, [user, session, availableCourses]);
 
-  return { selectedCourses, setSelectedCourses, checkForConflicts };
+  return { selectedCourses, setSelectedCourses, checkForConflicts, totalUnits };
 };

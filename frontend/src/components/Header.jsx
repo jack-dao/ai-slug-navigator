@@ -93,7 +93,7 @@ const Header = ({
               <img
                 src={sammyChat}
                 alt="Sammy"
-                className="absolute inset-0 w-full h-full object-contain drop-shadow-sm scale-[3.95] -translate-y-[1px] transition-transform group-hover:scale-[4.2]"
+                className="absolute inset-0 w-full h-full object-contain drop-shadow-sm scale-[3.65] -translate-y-[1px] transition-transform group-hover:scale-[3.9]"
               />
             </span>
 

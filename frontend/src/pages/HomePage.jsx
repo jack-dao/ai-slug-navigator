@@ -47,7 +47,9 @@ const HomePage = ({ user, session }) => {
       filters, setFilters, searchQuery, setSearchQuery, resetFilters, processedCourses 
   } = useCourseFilters(availableCourses, professorRatings);
   
-  const { selectedCourses, setSelectedCourses, checkForConflicts } = useSchedule(user, session, availableCourses);
+  // ✅ Get totalUnits from hook
+  const { selectedCourses, setSelectedCourses, checkForConflicts, totalUnits } = useSchedule(user, session, availableCourses);
+  const MAX_UNITS = 22;
 
   // --- DATA FETCHING ---
   useEffect(() => {
@@ -72,12 +74,26 @@ const HomePage = ({ user, session }) => {
   };
 
   const addCourse = (course, section) => {
+    // 1. Check for Conflicts
     const conflictingCourse = checkForConflicts(section, selectedCourses, course.code);
     if (conflictingCourse) {
         showNotification(`Time conflict with ${conflictingCourse}`, 'error');
         return;
     }
+
+    // 2. ✅ Check for Unit Cap
+    const courseUnits = parseInt(course.credits || 0);
     const existingIndex = selectedCourses.findIndex(c => c.code === course.code);
+    
+    // Only check cap if we are ADDING a new course (not updating an existing one)
+    if (existingIndex === -1) {
+        if (totalUnits + courseUnits > MAX_UNITS) {
+            showNotification(`Cannot add ${course.code}. Exceeds ${MAX_UNITS} unit limit.`, 'error');
+            return;
+        }
+    }
+
+    // 3. Add Course
     const isUpdate = existingIndex !== -1;
     const newSchedule = isUpdate 
         ? selectedCourses.map(c => c.code === course.code ? { ...course, selectedSection: section } : c)
