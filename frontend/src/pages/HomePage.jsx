@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, AlertCircle, CheckCircle, Search, Filter, BookOpen } from 'lucide-react';
 
-// COMPONENTS
 import Header from '../components/Header'; 
 import FilterSidebar from '../components/FilterSidebar';
 import CustomDropdown from '../components/CustomDropdown';
@@ -12,46 +11,37 @@ import CalendarView from '../components/CalendarView';
 import ScheduleList from '../components/ScheduleList';
 import ProfessorModal from '../components/ProfessorModal';
 
-// HOOKS
 import { useCourseFilters } from '../hooks/useCourseFilters';
 import { useSchedule } from '../hooks/useSchedule';
 
 const HomePage = ({ user, session }) => {
   const UCSC_SCHOOL = { id: 'ucsc', name: 'UC Santa Cruz', shortName: 'UCSC', term: 'Winter 2026', status: 'active' };
   
-  // State
   const [activeTab, setActiveTab] = useState('search');
   const [showFilters, setShowFilters] = useState(true);
   const [showAIChat, setShowAIChat] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   
-  // Data State
   const [availableCourses, setAvailableCourses] = useState([]);
   const [professorRatings, setProfessorRatings] = useState({});
   const [notification, setNotification] = useState(null);
   
-  // Modal State
   const [selectedProfessor, setSelectedProfessor] = useState(null);
   const [isProfModalOpen, setIsProfModalOpen] = useState(false);
 
-  // Chat State
   const [chatMessages, setChatMessages] = useState([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
 
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
-  // --- CUSTOM HOOKS ---
   const { 
       filters, setFilters, searchQuery, setSearchQuery, resetFilters, processedCourses 
   } = useCourseFilters(availableCourses, professorRatings);
   
-  // ✅ Get totalUnits from hook
   const { selectedCourses, setSelectedCourses, checkForConflicts, totalUnits } = useSchedule(user, session, availableCourses);
   const MAX_UNITS = 22;
 
-  // --- DATA FETCHING ---
   useEffect(() => {
     const fetchData = async () => {
         try {
@@ -66,7 +56,6 @@ const HomePage = ({ user, session }) => {
 
   useEffect(() => { setCurrentPage(1); }, [searchQuery, filters]);
 
-  // --- HANDLERS ---
   const showNotification = (message, type = 'success') => {
     setNotification(null);
     setTimeout(() => { setNotification({ message, type }); }, 10);
@@ -74,18 +63,15 @@ const HomePage = ({ user, session }) => {
   };
 
   const addCourse = (course, section) => {
-    // 1. Check for Conflicts
     const conflictingCourse = checkForConflicts(section, selectedCourses, course.code);
     if (conflictingCourse) {
         showNotification(`Time conflict with ${conflictingCourse}`, 'error');
         return;
     }
 
-    // 2. ✅ Check for Unit Cap
     const courseUnits = parseInt(course.credits || 0);
     const existingIndex = selectedCourses.findIndex(c => c.code === course.code);
     
-    // Only check cap if we are ADDING a new course (not updating an existing one)
     if (existingIndex === -1) {
         if (totalUnits + courseUnits > MAX_UNITS) {
             showNotification(`Cannot add ${course.code}. Exceeds ${MAX_UNITS} unit limit.`, 'error');
@@ -93,7 +79,6 @@ const HomePage = ({ user, session }) => {
         }
     }
 
-    // 3. Add Course
     const isUpdate = existingIndex !== -1;
     const newSchedule = isUpdate 
         ? selectedCourses.map(c => c.code === course.code ? { ...course, selectedSection: section } : c)
@@ -172,7 +157,6 @@ const HomePage = ({ user, session }) => {
   return (
     <div className="min-h-screen w-full bg-white flex flex-col font-sans selection:bg-[#FDC700] selection:text-white relative">
       
-      {/* 1. Header (Blue) */}
       <Header 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -186,11 +170,9 @@ const HomePage = ({ user, session }) => {
 
       <div className="flex flex-row w-full min-h-[calc(100vh-80px)]">
         
-        {/* 2. Main Layout Logic */}
         <div className="flex flex-1 min-w-0 transition-all duration-300">
             {activeTab === 'search' && (
               <>
-                {/* Filters Sidebar */}
                 {showFilters && (
                     <FilterSidebar 
                         filters={filters}
@@ -200,10 +182,8 @@ const HomePage = ({ user, session }) => {
                     />
                 )}
 
-                {/* Main Content (Search + Results) */}
                 <main className="flex-1 min-w-0 bg-white relative z-0">
                     
-                    {/* Search Bar Row */}
                     <div className="px-8 py-6 border-b border-slate-100 bg-white sticky top-[80px] z-30">
                         <div className="flex gap-4 mb-4">
                             <button 
@@ -230,7 +210,6 @@ const HomePage = ({ user, session }) => {
                         <div className="flex items-center justify-between"><span className="font-bold text-sm text-slate-800">{processedCourses.length} Results</span></div>
                     </div>
 
-                    {/* Results Grid */}
                     <div className="p-8 grid grid-cols-1 gap-6">
                         {currentCourses.map(course => (
                             <CourseCard 
@@ -244,7 +223,6 @@ const HomePage = ({ user, session }) => {
                         ))}
                     </div>
 
-                    {/* Pagination */}
                     {processedCourses.length > ITEMS_PER_PAGE && (
                         <div className="flex justify-between items-center mt-12 mb-8 px-8 border-t border-slate-200 pt-8">
                             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className={`px-6 py-2 border border-slate-200 bg-white rounded-lg font-bold text-sm text-slate-700 transition-colors ${currentPage === 1 ? 'opacity-50 cursor-default' : 'hover:border-[#003C6C] hover:text-[#003C6C] cursor-pointer'}`}>Prev</button>
@@ -256,7 +234,6 @@ const HomePage = ({ user, session }) => {
               </>
             )}
 
-            {/* Schedule View */}
             {activeTab === 'schedule' && (
                 <div className="flex flex-1 h-[calc(100vh-80px)]">
                     <div className="w-[400px] shrink-0 border-r border-slate-100 flex flex-col z-10 bg-white">
@@ -279,7 +256,6 @@ const HomePage = ({ user, session }) => {
             )}
         </div>
 
-        {/* 3. AI Sidebar (Slide-over) */}
         {showAIChat && (
             <div className="w-[400px] bg-white border-l border-[#FDC700] shadow-xl shrink-0 h-[calc(100vh-80px)] sticky top-[80px] z-50">
                  <div className="w-full h-full">
@@ -297,7 +273,6 @@ const HomePage = ({ user, session }) => {
 
       </div>
       
-      {/* 4. Modals */}
       {notification && (
           <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 rounded-2xl text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-4 border animate-in slide-in-from-bottom-10 ${notification.type === 'error' ? 'bg-rose-600 border-rose-500' : 'bg-[#003C6C] border-[#FDC700]'}`}>
               {notification.type === 'error' ? <AlertCircle className="w-5 h-5"/> : <CheckCircle className="w-5 h-5 text-[#FDC700]"/>}
