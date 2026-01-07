@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, AlertCircle, CheckCircle, Search, Filter, BookOpen, Download } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, Search, Filter, BookOpen } from 'lucide-react';
 
 import Header from '../components/Header'; 
 import FilterSidebar from '../components/FilterSidebar';
@@ -32,8 +32,23 @@ const HomePage = ({ user, session }) => {
   const [showAIChat, setShowAIChat] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   
-  const [availableCourses, setAvailableCourses] = useState([]);
-  const [professorRatings, setProfessorRatings] = useState({});
+  // 2. Data State (With Instant Load Logic)
+  const [availableCourses, setAvailableCourses] = useState(() => {
+      // ✅ INSTANT LOAD: Try to get courses from cache immediately
+      try {
+          const cached = localStorage.getItem('cachedCourses');
+          return cached ? JSON.parse(cached) : [];
+      } catch (e) { return []; }
+  });
+
+  const [professorRatings, setProfessorRatings] = useState(() => {
+      // ✅ INSTANT LOAD: Try to get ratings from cache immediately
+      try {
+          const cached = localStorage.getItem('cachedRatings');
+          return cached ? JSON.parse(cached) : {};
+      } catch (e) { return {}; }
+  });
+
   const [notification, setNotification] = useState(null);
   
   const [selectedProfessor, setSelectedProfessor] = useState(null);
@@ -42,16 +57,13 @@ const HomePage = ({ user, session }) => {
   const [chatMessages, setChatMessages] = useState([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
 
-  // 2. Pagination
   const [currentPage, setCurrentPage] = useState(() => {
     return parseInt(sessionStorage.getItem('currentPage')) || 1;
   });
   
   const ITEMS_PER_PAGE = 20;
 
-  // --- SCROLL TO TOP ON PAGE CHANGE ---
   useEffect(() => {
-    // Standard scroll to top
     window.scrollTo(0, 0);
     sessionStorage.setItem('currentPage', currentPage);
   }, [currentPage]);
@@ -60,19 +72,13 @@ const HomePage = ({ user, session }) => {
       filters, setFilters, searchQuery, setSearchQuery, resetFilters, processedCourses 
   } = useCourseFilters(availableCourses, professorRatings);
   
-  // ✅ FIX: Robust Reset Logic
-  // We store the initial values in refs. We only reset pagination if the values ACTUALLY change.
   const prevSearchRef = useRef(searchQuery);
   const prevFiltersRef = useRef(JSON.stringify(filters));
 
   useEffect(() => {
     const filtersStr = JSON.stringify(filters);
-    const searchChanged = prevSearchRef.current !== searchQuery;
-    const filtersChanged = prevFiltersRef.current !== filtersStr;
-
-    if (searchChanged || filtersChanged) {
+    if (prevSearchRef.current !== searchQuery || prevFiltersRef.current !== filtersStr) {
       setCurrentPage(1);
-      // Update refs to current values
       prevSearchRef.current = searchQuery;
       prevFiltersRef.current = filtersStr;
     }
@@ -81,14 +87,28 @@ const HomePage = ({ user, session }) => {
   const { selectedCourses, setSelectedCourses, checkForConflicts, totalUnits } = useSchedule(user, session, availableCourses);
   const MAX_UNITS = 22;
 
+  // --- DATA FETCHING (BACKGROUND UPDATE) ---
   useEffect(() => {
     const fetchData = async () => {
         try {
+            // 1. Fetch Courses
             const cRes = await fetch('http://localhost:3000/api/courses');
-            setAvailableCourses(await cRes.json());
+            if (cRes.ok) {
+                const courses = await cRes.json();
+                setAvailableCourses(courses);
+                // ✅ UPDATE CACHE: Save fresh data for next time
+                localStorage.setItem('cachedCourses', JSON.stringify(courses));
+            }
+
+            // 2. Fetch Ratings
             const rRes = await fetch('http://localhost:3000/api/ratings');
-            setProfessorRatings(await rRes.json());
-        } catch (e) { console.error(e); }
+            if (rRes.ok) {
+                const ratings = await rRes.json();
+                setProfessorRatings(ratings);
+                // ✅ UPDATE CACHE
+                localStorage.setItem('cachedRatings', JSON.stringify(ratings));
+            }
+        } catch (e) { console.error("Background Fetch Error:", e); }
     };
     fetchData();
   }, []);
@@ -196,7 +216,6 @@ const HomePage = ({ user, session }) => {
 
   return (
     <div className="min-h-screen w-full bg-white flex flex-col font-sans selection:bg-[#FDC700] selection:text-white relative">
-      
       <Header 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -209,7 +228,6 @@ const HomePage = ({ user, session }) => {
       />
 
       <div className="flex flex-row w-full min-h-[calc(100vh-80px)]">
-        
         <div className="flex flex-1 min-w-0 transition-all duration-300">
             {activeTab === 'search' && (
               <>
@@ -221,9 +239,7 @@ const HomePage = ({ user, session }) => {
                         activeTab={activeTab}
                     />
                 )}
-
                 <main className="flex-1 min-w-0 bg-white relative z-0">
-                    
                     <div className="px-8 py-6 border-b border-slate-100 bg-white sticky top-[80px] z-30">
                         <div className="flex gap-4 mb-4">
                             <button 
@@ -233,7 +249,6 @@ const HomePage = ({ user, session }) => {
                             >
                                 <Filter className="w-5 h-5" />
                             </button>
-
                             <div className="relative flex-1 group">
                                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003C6C] w-5 h-5 transition-colors" />
                                 <input type="text" placeholder="Search courses and instructors..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-[#003C6C] outline-none text-sm font-bold shadow-inner text-slate-700 placeholder:text-slate-400" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
