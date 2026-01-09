@@ -97,6 +97,8 @@ export const useSchedule = (user, session, availableCourses) => {
             }
         } catch (err) { console.error("Schedule Fetch Error:", err); }
       } else if (!user) {
+          setSelectedCourses([]);
+          localStorage.removeItem('cachedSchedule');
       }
     };
     fetchUserSchedule();
