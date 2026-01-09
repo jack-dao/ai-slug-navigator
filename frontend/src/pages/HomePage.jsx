@@ -10,6 +10,7 @@ import AuthModal from '../components/AuthModal';
 import CalendarView from '../components/CalendarView';
 import ScheduleList from '../components/ScheduleList';
 import ProfessorModal from '../components/ProfessorModal';
+import PrivacyModal from '../components/PrivacyModal'; // ✅ 1. Import Privacy Modal
 import AboutTab from '../components/AboutTab';
 
 import { useCourseFilters } from '../hooks/useCourseFilters';
@@ -29,6 +30,9 @@ const HomePage = ({ user, session }) => {
   const [showFilters, setShowFilters] = useState(true);
   const [showAIChat, setShowAIChat] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  
+  // ✅ 2. Add State for Privacy Modal
+  const [showPrivacy, setShowPrivacy] = useState(false);
   
   const [availableCourses, setAvailableCourses] = useState(() => {
       try {
@@ -84,13 +88,13 @@ const HomePage = ({ user, session }) => {
   useEffect(() => {
     const fetchData = async () => {
         try {
-            const cRes = await fetch('http://localhost:3000/api/courses');
+            const cRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/courses`);
             if (cRes.ok) {
                 const courses = await cRes.json();
                 setAvailableCourses(courses);
                 localStorage.setItem('cachedCourses', JSON.stringify(courses));
             }
-            const rRes = await fetch('http://localhost:3000/api/ratings');
+            const rRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/ratings`);
             if (rRes.ok) {
                 const ratings = await rRes.json();
                 setProfessorRatings(ratings);
@@ -150,7 +154,7 @@ const HomePage = ({ user, session }) => {
               labCode: course.selectedSection?.selectedLab?.sectionCode
           })) 
       };
-      const response = await fetch('http://localhost:3000/api/schedules', { 
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/schedules`, { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, 
           body: JSON.stringify(payload) 
@@ -173,7 +177,7 @@ const HomePage = ({ user, session }) => {
     setChatMessages(prev => [...prev, { role: 'assistant', text: "Thinking... 🐌" }]);
 
     try {
-      const response = await fetch('http://localhost:3000/api/chat', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -296,7 +300,8 @@ const HomePage = ({ user, session }) => {
             )}
 
             {activeTab === 'about' && (
-                <AboutTab />
+                // ✅ 3. Pass function to open modal
+                <AboutTab onOpenPrivacy={() => setShowPrivacy(true)} />
             )}
         </div>
 
@@ -324,6 +329,9 @@ const HomePage = ({ user, session }) => {
           </div>
       )}
 
+      {/* ✅ 4. Render the Privacy Modal */}
+      <PrivacyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+      
       <ProfessorModal professor={selectedProfessor} isOpen={isProfModalOpen} onClose={() => setIsProfModalOpen(false)} />
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onLoginSuccess={() => setShowAuthModal(false)} selectedSchool={UCSC_SCHOOL} />
     </div>
