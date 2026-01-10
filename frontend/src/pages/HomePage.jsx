@@ -94,7 +94,7 @@ const HomePage = ({ user, session }) => {
                 setAvailableCourses(courses);
                 try {
                     localStorage.setItem('cachedCourses', JSON.stringify(courses));
-                } catch (err) {
+                } catch {
                     console.warn("Course data too large for Local Storage. Skipping cache.");
                 }
             }
