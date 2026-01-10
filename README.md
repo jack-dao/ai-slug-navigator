@@ -4,19 +4,29 @@
 
 ![Status](https://img.shields.io/badge/Status-Live-emerald?style=for-the-badge) ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 
-## 💡 Inspiration
-Signing up for classes at UCSC is stressful. Students have to juggle the **Course Catalog**, **MyUCSC**, and **RateMyProfessors** in three different tabs.  
-**AI Slug Navigator** solves this by combining everything into one dashboard. It uses **Google Gemini AI** to act as a personal academic advisor, helping students find classes, check prerequisites, and build a conflict free schedule in seconds.
+## 📖 Project Overview
+**AI Slug Navigator** is a full-stack **React** and **Node.js/Express** web application that simplifies course planning for UCSC students, using Supabase Google OAuth to let students save and revisit schedules..
+
+It acts as a centralized dashboard that unifies **MyUCSC course data**, **RateMyProfessors ratings**, and **Google Gemini AI** into a single interface. Instead of juggling multiple tabs to cross-reference class times and professor reviews, students can search and filter courses, visualize their weekly schedule, and ask an AI Academic Advisor for recomendations.
 
 ---
 
 ## 🚀 Key Features
 
 * **🤖 AI Academic Advisor:** Chat with "Sammy AI" (powered by Gemini 2.5) to find classes based on your interests (for example, "Find me an easy GE for Arts credit").
-* **📅 Smart Schedule Builder:** Drag and drop classes. The app automatically blocks time conflicts and calculates unit totals.
+* **📅 Smart Schedule Builder:** Add and drop classes. The app automatically blocks time conflicts and calculates unit totals.
 * **⭐ RMP Integration:** See RateMyProfessors ratings and difficulty scores directly on the course card.
 * **⚡ Real Time Search:** Instant search across thousands of courses with best match sorting.
 * **🔒 Privacy First:** Uses Google OAuth (Supabase) for secure login. We never sell student data.
+
+---
+
+## 🤖 How it Works (RAG)
+Unlike standard chatbots, this app uses **RAG (Retrieval-Augmented Generation)** to ground responses in the current course catalog and your in-progress schedule.
+
+* **Catalog aware:** Suggestions are based on the latest scraped course data, including availability status when provided.
+* **Schedule aware:** It considers the schedule you are building and avoids recommending time conflicts.
+* **Prerequisite aware:** It reads prerequisite text and course descriptions to warn about missing requirements.
 
 ---
 
