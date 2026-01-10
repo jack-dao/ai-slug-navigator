@@ -63,7 +63,14 @@ Create a `.env` file in `./backend`:
 ```bash
 DATABASE_URL="your_supabase_url"
 GEMINI_API_KEY="your_google_key"
+JWT_SECRET="your_random_secret_string"
 PORT=3000
+```
+
+Create a `.env` file in `./frontend`:
+```bash
+VITE_SUPABASE_URL="your_supabase_url"
+VITE_SUPABASE_ANON_KEY="your_supabase_anon_key"
 ```
 
 ### 3. Start the App
