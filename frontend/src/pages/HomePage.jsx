@@ -70,17 +70,40 @@ const HomePage = ({ user, session }) => {
     sessionStorage.setItem('currentPage', currentPage);
   }, [currentPage]);
 
+  // Lock body scroll logic
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
-        setShowFilters(false);
+        if (showAIChat || showFilters) {
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        }
       } else {
         setShowFilters(true);
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
       }
     };
+    
+    // Initial check
+    if (window.innerWidth < 768 && (showAIChat || showFilters)) {
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+    }
+
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    return () => {
+        window.removeEventListener('resize', handleResize);
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+    };
+  }, [showAIChat, showFilters]);
 
   const { 
       filters, setFilters, searchQuery, setSearchQuery, resetFilters, processedCourses 
@@ -224,44 +247,43 @@ const HomePage = ({ user, session }) => {
   const currentCourses = processedCourses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
-    // ⚡️ FIX: Added 'overflow-x-hidden' to main container to prevent side scrolling
-    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-white flex flex-col font-sans relative pb-[90px] md:pb-0">
+    <div className="min-h-screen w-full bg-white flex flex-col font-sans relative pb-24 md:pb-0">
       
-      <Header 
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        user={user}
-        showAuthModal={showAuthModal}
-        onLoginClick={() => setShowAuthModal(true)}
-        showAIChat={showAIChat}
-        onToggleChat={() => setShowAIChat(!showAIChat)}
-        selectedSchool={ucscSchool} 
-      />
+      {/* ⚡️ HEADER (Sticky on desktop, fixed behavior on mobile via logic) */}
+      <div className="sticky top-0 z-[60] w-full bg-white">
+        <Header 
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            user={user}
+            showAuthModal={showAuthModal}
+            onLoginClick={() => setShowAuthModal(true)}
+            showAIChat={showAIChat}
+            onToggleChat={() => setShowAIChat(!showAIChat)}
+            selectedSchool={ucscSchool} 
+        />
+      </div>
 
       <div className="flex flex-row w-full min-h-[calc(100vh-80px)] relative">
         <div className="flex flex-1 min-w-0 transition-all duration-300 relative">
             
             {activeTab === 'search' && (
               <>
-                {/* Mobile Filter Modal */}
+                {/* ⚡️ Mobile Filter Modal */}
                 {showFilters && (
-                    <div className="fixed inset-0 z-[100] bg-white flex flex-col md:hidden animate-in slide-in-from-bottom-5">
-                        <div className="p-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
-                            <span className="font-bold text-slate-700 text-lg">Filters</span>
-                            <button onClick={() => setShowFilters(false)} className="px-6 py-2 bg-[#003C6C] text-white rounded-xl text-sm font-bold shadow-lg">Done</button>
-                        </div>
+                    <div className="fixed top-[70px] bottom-[80px] left-0 right-0 z-50 bg-white flex flex-col md:hidden animate-in slide-in-from-bottom-5 overflow-hidden border-t border-b border-slate-200 shadow-xl">
                         <div className="flex-1 overflow-y-auto">
                             <FilterSidebar 
                                 filters={filters}
                                 setFilters={setFilters}
                                 onReset={resetFilters}
                                 activeTab={activeTab}
+                                onClose={() => setShowFilters(false)}
                             />
                         </div>
                     </div>
                 )}
 
-                {/* Desktop Filter Sidebar */}
+                {/* ⚡️ Desktop Filter Sidebar */}
                 {showFilters && (
                     <div className="hidden md:block h-full">
                         <FilterSidebar 
@@ -274,7 +296,7 @@ const HomePage = ({ user, session }) => {
                 )}
                 
                 <main className="flex-1 min-w-0 bg-white relative z-0">
-                    <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-[60px] md:top-[80px] z-30">
+                    <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-[70px] md:top-[80px] z-30">
                         <div className="flex flex-row gap-3 md:gap-4 mb-4">
                             <button 
                                 onClick={() => setShowFilters(!showFilters)} 
@@ -331,8 +353,7 @@ const HomePage = ({ user, session }) => {
 
             {activeTab === 'schedule' && (
                 <div className="flex flex-col md:flex-row flex-1 h-full">
-                    {/* Mobile: Schedule List is top. Desktop: Left sidebar */}
-                    <div className="w-full md:w-[400px] shrink-0 border-b md:border-r border-slate-100 flex flex-col z-10 bg-white max-h-[40vh] md:max-h-full overflow-y-auto custom-scrollbar">
+                    <div className="w-full md:w-[400px] shrink-0 border-b md:border-r border-slate-100 flex flex-col z-10 bg-white max-h-[35vh] md:max-h-full overflow-y-auto custom-scrollbar">
                         <div className="p-4 md:p-6 flex-1">
                             <div className="pb-4 mb-4 border-b border-slate-100 flex justify-center">
                                 <h3 className="font-bold text-[#003C6C] text-lg flex items-center gap-2">
@@ -345,10 +366,9 @@ const HomePage = ({ user, session }) => {
                             <button onClick={handleSaveSchedule} className="w-full py-4 bg-[#003C6C] text-white font-bold rounded-2xl hover:bg-[#002a4d] shadow-xl transition-all cursor-pointer active:scale-95 text-sm flex items-center justify-center gap-2"><Save className="w-4 h-4" /> Save Schedule</button>
                         </div>
                     </div>
-                    {/* Mobile: Calendar is below list. Desktop: Right main area */}
-                    <div className="flex-1 overflow-hidden relative min-h-[500px]">
+                    <div className="flex-1 overflow-hidden relative">
                         <div className="h-full w-full overflow-x-auto overflow-y-hidden">
-                             <div className="min-w-[600px] md:min-w-full h-full">
+                             <div className="min-w-[800px] h-full">
                                 <CalendarView selectedCourses={selectedCourses} />
                              </div>
                         </div>
@@ -361,13 +381,9 @@ const HomePage = ({ user, session }) => {
             )}
         </div>
 
-        {/* AI Chat Sidebar (Mobile: Fullscreen Overlay, Desktop: Side Panel) */}
+        {/* ⚡️ AI Chat Sidebar */}
         {showAIChat && (
-            <div className="fixed inset-0 z-[70] md:sticky md:top-[80px] md:h-[calc(100vh-80px)] md:w-[400px] bg-white border-l border-[#FDC700] shadow-xl shrink-0 flex flex-col">
-                 <div className="md:hidden p-4 bg-[#FDC700] flex justify-between items-center">
-                    <span className="font-bold text-[#003C6C]">Sammy AI</span>
-                    <button onClick={() => setShowAIChat(false)} className="text-[#003C6C] font-bold bg-white/20 px-3 py-1 rounded-lg">Close</button>
-                 </div>
+            <div className="fixed top-[70px] bottom-[80px] left-0 right-0 z-50 bg-white border-l border-[#FDC700] shadow-xl shrink-0 flex flex-col md:sticky md:top-[80px] md:h-[calc(100vh-80px)] md:w-[400px] md:bottom-auto">
                  <div className="w-full h-full overflow-hidden">
                     <ChatSidebar 
                         isOpen={true} 
