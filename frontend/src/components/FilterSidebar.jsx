@@ -4,12 +4,7 @@ import { DEPARTMENTS } from '../utils/departments';
 import CustomDropdown from './CustomDropdown';
 import FilterSection from './FilterSection';
 
-const FilterSidebar = ({ 
-    filters, 
-    setFilters, 
-    onReset,
-    activeTab
-}) => {
+const FilterSidebar = ({ filters, setFilters, onReset, activeTab }) => {
     
     const formatHour = (h) => {
         const ampm = h >= 12 ? 'PM' : 'AM';
@@ -36,7 +31,7 @@ const FilterSidebar = ({
 
     if (activeTab === 'schedule') {
         return (
-            <aside className="w-[260px] shrink-0 sticky top-[80px] h-[calc(100vh-80px)] border-r border-slate-100 bg-white p-6 z-40 flex flex-col items-center justify-center text-slate-400">
+            <aside className="hidden md:flex w-[260px] shrink-0 sticky top-[80px] h-[calc(100vh-80px)] border-r border-slate-100 bg-white p-6 z-40 flex-col items-center justify-center text-slate-400">
                 <List className="w-12 h-12 mb-2 opacity-50" />
                 <p className="font-bold text-sm">Viewing Schedule</p>
             </aside>
@@ -44,7 +39,7 @@ const FilterSidebar = ({
     }
 
     return (
-        <aside className="w-[260px] shrink-0 sticky top-[80px] h-[calc(100vh-80px)] overflow-y-auto custom-scrollbar border-r border-slate-100 bg-white p-6 z-40">
+        <aside className="w-full md:w-[260px] h-full md:h-[calc(100vh-80px)] md:sticky md:top-[80px] shrink-0 overflow-y-auto custom-scrollbar border-r border-slate-100 bg-white p-6 md:z-40 pb-40 md:pb-6 max-w-[100vw]">
             <div className="flex items-baseline justify-between mb-6 pb-4 border-b border-slate-100">
                 <h3 className="font-bold text-2xl text-[#003C6C]">Filters</h3>
                 <button onClick={onReset} className="text-sm font-bold text-slate-500 hover:text-rose-500 hover:underline transition-colors flex items-center gap-1 cursor-pointer">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, AlertCircle, CheckCircle, Search, Filter, BookOpen } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, Search, Filter, BookOpen, MessageSquare, Calendar as CalendarIcon, Info } from 'lucide-react';
 
 import Header from '../components/Header'; 
 import FilterSidebar from '../components/FilterSidebar';
@@ -33,7 +33,7 @@ const HomePage = ({ user, session }) => {
     localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
 
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(() => window.innerWidth >= 768);
   const [showAIChat, setShowAIChat] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -70,6 +70,18 @@ const HomePage = ({ user, session }) => {
     sessionStorage.setItem('currentPage', currentPage);
   }, [currentPage]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setShowFilters(false);
+      } else {
+        setShowFilters(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const { 
       filters, setFilters, searchQuery, setSearchQuery, resetFilters, processedCourses 
   } = useCourseFilters(availableCourses, professorRatings);
@@ -93,44 +105,25 @@ const HomePage = ({ user, session }) => {
     const fetchData = async () => {
         try {
             const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
             const [infoRes, cRes, rRes] = await Promise.all([
                 fetch(`${apiBase}/api/courses/info`),
                 fetch(`${apiBase}/api/courses`),
                 fetch(`${apiBase}/api/ratings`)
             ]);
 
-            if (infoRes.ok) {
-                const info = await infoRes.json();
-                setUcscSchool(info);
-            }
-
+            if (infoRes.ok) setUcscSchool(await infoRes.json());
             if (cRes.ok) {
                 const courses = await cRes.json();
                 setAvailableCourses(courses);
-                
-                try {
-                    localStorage.setItem('cachedCourses', JSON.stringify(courses));
-                } catch {
-                    console.warn("Course data too large for Local Storage. Skipping cache.");
-                }
+                try { localStorage.setItem('cachedCourses', JSON.stringify(courses)); } catch {}
             }
-
             if (rRes.ok) {
                 const ratings = await rRes.json();
                 setProfessorRatings(ratings);
-
-                try {
-                    localStorage.setItem('cachedRatings', JSON.stringify(ratings));
-                } catch {
-                      console.warn("Ratings too big to save. Skipping cache.");
-                }
+                try { localStorage.setItem('cachedRatings', JSON.stringify(ratings)); } catch {}
             }
-        } catch (e) { 
-            console.error("Network error:", e); 
-        }
+        } catch (e) { console.error("Network error:", e); }
     };
-    
     fetchData();
   }, []);
 
@@ -148,11 +141,9 @@ const HomePage = ({ user, session }) => {
     }
     const courseUnits = parseInt(course.credits || 0);
     const existingIndex = selectedCourses.findIndex(c => c.code === course.code);
-    if (existingIndex === -1) {
-        if (totalUnits + courseUnits > MAX_UNITS) {
-            showNotification(`Cannot add ${course.code}. Exceeds ${MAX_UNITS} unit limit.`, 'error');
-            return;
-        }
+    if (existingIndex === -1 && totalUnits + courseUnits > MAX_UNITS) {
+        showNotification(`Cannot add ${course.code}. Exceeds ${MAX_UNITS} unit limit.`, 'error');
+        return;
     }
     const isUpdate = existingIndex !== -1;
     const newSchedule = isUpdate 
@@ -233,7 +224,8 @@ const HomePage = ({ user, session }) => {
   const currentCourses = processedCourses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
-    <div className="min-h-screen w-full bg-white flex flex-col font-sans selection:bg-[#FDC700] selection:text-white relative">
+    // ⚡️ FIX: Added 'overflow-x-hidden' to main container to prevent side scrolling
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-white flex flex-col font-sans relative pb-[90px] md:pb-0">
       
       <Header 
         activeTab={activeTab}
@@ -246,34 +238,63 @@ const HomePage = ({ user, session }) => {
         selectedSchool={ucscSchool} 
       />
 
-      <div className="flex flex-row w-full min-h-[calc(100vh-80px)]">
-        
-        <div className="flex flex-1 min-w-0 transition-all duration-300">
+      <div className="flex flex-row w-full min-h-[calc(100vh-80px)] relative">
+        <div className="flex flex-1 min-w-0 transition-all duration-300 relative">
+            
             {activeTab === 'search' && (
               <>
+                {/* Mobile Filter Modal */}
                 {showFilters && (
-                    <FilterSidebar 
-                        filters={filters}
-                        setFilters={setFilters}
-                        onReset={resetFilters}
-                        activeTab={activeTab}
-                    />
+                    <div className="fixed inset-0 z-[100] bg-white flex flex-col md:hidden animate-in slide-in-from-bottom-5">
+                        <div className="p-4 border-b flex justify-between items-center bg-slate-50 shrink-0">
+                            <span className="font-bold text-slate-700 text-lg">Filters</span>
+                            <button onClick={() => setShowFilters(false)} className="px-6 py-2 bg-[#003C6C] text-white rounded-xl text-sm font-bold shadow-lg">Done</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto">
+                            <FilterSidebar 
+                                filters={filters}
+                                setFilters={setFilters}
+                                onReset={resetFilters}
+                                activeTab={activeTab}
+                            />
+                        </div>
+                    </div>
                 )}
+
+                {/* Desktop Filter Sidebar */}
+                {showFilters && (
+                    <div className="hidden md:block h-full">
+                        <FilterSidebar 
+                            filters={filters}
+                            setFilters={setFilters}
+                            onReset={resetFilters}
+                            activeTab={activeTab}
+                        />
+                    </div>
+                )}
+                
                 <main className="flex-1 min-w-0 bg-white relative z-0">
-                    <div className="px-8 py-6 border-b border-slate-100 bg-white sticky top-[80px] z-30">
-                        <div className="flex gap-4 mb-4">
+                    <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-[60px] md:top-[80px] z-30">
+                        <div className="flex flex-row gap-3 md:gap-4 mb-4">
                             <button 
                                 onClick={() => setShowFilters(!showFilters)} 
-                                className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-center ${showFilters ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-white border-slate-200 text-[#003C6C] hover:border-[#003C6C]'}`}
-                                title={showFilters ? "Hide Filters" : "Show Filters"}
+                                className={`p-3 md:p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-center shrink-0 ${showFilters ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-white border-slate-200 text-[#003C6C] hover:border-[#003C6C]'}`}
                             >
                                 <Filter className="w-5 h-5" />
                             </button>
-                            <div className="relative flex-1 group">
-                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003C6C] w-5 h-5 transition-colors" />
-                                <input type="text" placeholder="Search courses and instructors..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-[#003C6C] outline-none text-sm font-bold shadow-inner text-slate-700 placeholder:text-slate-400" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+
+                            <div className="relative flex-1 group min-w-0">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003C6C] w-5 h-5 transition-colors" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search courses..." 
+                                    className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-[#003C6C] outline-none text-sm font-bold shadow-inner text-slate-700 placeholder:text-slate-400" 
+                                    value={searchQuery} 
+                                    onChange={(e) => setSearchQuery(e.target.value)} 
+                                />
                             </div>
-                            <div className="relative w-64">
+                            
+                            <div className="relative w-64 hidden md:block">
                                 <CustomDropdown 
                                     prefix="Sort by: "
                                     value={filters.sort}
@@ -284,7 +305,8 @@ const HomePage = ({ user, session }) => {
                         </div>
                         <div className="flex items-center justify-between"><span className="font-bold text-sm text-slate-800">{processedCourses.length} Results</span></div>
                     </div>
-                    <div className="p-8 grid grid-cols-1 gap-6">
+
+                    <div className="p-4 md:p-8 grid grid-cols-1 gap-6">
                         {currentCourses.map(course => (
                             <CourseCard 
                                 key={course.id} 
@@ -297,10 +319,10 @@ const HomePage = ({ user, session }) => {
                         ))}
                     </div>
                     {processedCourses.length > ITEMS_PER_PAGE && (
-                        <div className="flex justify-between items-center mt-12 mb-8 px-8 border-t border-slate-200 pt-8">
-                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className={`px-6 py-2 border border-slate-200 bg-white rounded-lg font-bold text-sm text-slate-700 transition-colors ${currentPage === 1 ? 'opacity-50 cursor-default' : 'hover:border-[#003C6C] hover:text-[#003C6C] cursor-pointer'}`}>Prev</button>
+                        <div className="flex justify-between items-center mt-12 mb-8 px-4 md:px-8 border-t border-slate-200 pt-8">
+                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className={`px-4 md:px-6 py-2 border border-slate-200 bg-white rounded-lg font-bold text-sm text-slate-700 transition-colors ${currentPage === 1 ? 'opacity-50 cursor-default' : 'hover:border-[#003C6C] hover:text-[#003C6C] cursor-pointer'}`}>Prev</button>
                             <span className="font-bold text-slate-500 text-sm">Page {currentPage} of {totalPages}</span>
-                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className={`px-6 py-2 border border-slate-200 bg-white rounded-lg font-bold text-sm text-slate-700 transition-colors ${currentPage === totalPages ? 'opacity-50 cursor-default' : 'hover:border-[#003C6C] hover:text-[#003C6C] cursor-pointer'}`}>Next</button>
+                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className={`px-4 md:px-6 py-2 border border-slate-200 bg-white rounded-lg font-bold text-sm text-slate-700 transition-colors ${currentPage === totalPages ? 'opacity-50 cursor-default' : 'hover:border-[#003C6C] hover:text-[#003C6C] cursor-pointer'}`}>Next</button>
                         </div>
                     )}
                 </main>
@@ -308,9 +330,10 @@ const HomePage = ({ user, session }) => {
             )}
 
             {activeTab === 'schedule' && (
-                <div className="flex flex-1 h-[calc(100vh-80px)]">
-                    <div className="w-[400px] shrink-0 border-r border-slate-100 flex flex-col z-10 bg-white">
-                        <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+                <div className="flex flex-col md:flex-row flex-1 h-full">
+                    {/* Mobile: Schedule List is top. Desktop: Left sidebar */}
+                    <div className="w-full md:w-[400px] shrink-0 border-b md:border-r border-slate-100 flex flex-col z-10 bg-white max-h-[40vh] md:max-h-full overflow-y-auto custom-scrollbar">
+                        <div className="p-4 md:p-6 flex-1">
                             <div className="pb-4 mb-4 border-b border-slate-100 flex justify-center">
                                 <h3 className="font-bold text-[#003C6C] text-lg flex items-center gap-2">
                                     <BookOpen className="w-5 h-5"/> My Schedule
@@ -318,12 +341,17 @@ const HomePage = ({ user, session }) => {
                             </div>
                             <ScheduleList selectedCourses={selectedCourses} onRemove={removeCourse} />
                         </div>
-                        <div className="p-6 border-t border-slate-100 shrink-0 bg-white">
+                        <div className="p-4 md:p-6 border-t border-slate-100 shrink-0 bg-white">
                             <button onClick={handleSaveSchedule} className="w-full py-4 bg-[#003C6C] text-white font-bold rounded-2xl hover:bg-[#002a4d] shadow-xl transition-all cursor-pointer active:scale-95 text-sm flex items-center justify-center gap-2"><Save className="w-4 h-4" /> Save Schedule</button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                        <CalendarView selectedCourses={selectedCourses} />
+                    {/* Mobile: Calendar is below list. Desktop: Right main area */}
+                    <div className="flex-1 overflow-hidden relative min-h-[500px]">
+                        <div className="h-full w-full overflow-x-auto overflow-y-hidden">
+                             <div className="min-w-[600px] md:min-w-full h-full">
+                                <CalendarView selectedCourses={selectedCourses} />
+                             </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -333,9 +361,14 @@ const HomePage = ({ user, session }) => {
             )}
         </div>
 
+        {/* AI Chat Sidebar (Mobile: Fullscreen Overlay, Desktop: Side Panel) */}
         {showAIChat && (
-            <div className="w-[400px] bg-white border-l border-[#FDC700] shadow-xl shrink-0 h-[calc(100vh-80px)] sticky top-[80px] z-50">
-                 <div className="w-full h-full">
+            <div className="fixed inset-0 z-[70] md:sticky md:top-[80px] md:h-[calc(100vh-80px)] md:w-[400px] bg-white border-l border-[#FDC700] shadow-xl shrink-0 flex flex-col">
+                 <div className="md:hidden p-4 bg-[#FDC700] flex justify-between items-center">
+                    <span className="font-bold text-[#003C6C]">Sammy AI</span>
+                    <button onClick={() => setShowAIChat(false)} className="text-[#003C6C] font-bold bg-white/20 px-3 py-1 rounded-lg">Close</button>
+                 </div>
+                 <div className="w-full h-full overflow-hidden">
                     <ChatSidebar 
                         isOpen={true} 
                         onClose={() => setShowAIChat(false)} 
@@ -350,8 +383,46 @@ const HomePage = ({ user, session }) => {
 
       </div>
       
+      {/* 📱 MOBILE BOTTOM NAVIGATION BAR */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-[80px] bg-white border-t border-slate-200 flex justify-around items-center z-[999] pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
+          <button 
+             onClick={() => { setActiveTab('search'); setShowAIChat(false); }} 
+             className={`flex flex-col items-center gap-1 p-2 w-16 ${activeTab === 'search' && !showAIChat ? 'text-[#003C6C]' : 'text-slate-400'}`}
+          >
+              <Search className={`w-6 h-6 ${activeTab === 'search' && !showAIChat ? 'stroke-[3px]' : ''}`} />
+              <span className="text-[10px] font-bold">Search</span>
+          </button>
+
+          <button 
+             onClick={() => { setActiveTab('schedule'); setShowAIChat(false); }} 
+             className={`flex flex-col items-center gap-1 p-2 w-16 ${activeTab === 'schedule' && !showAIChat ? 'text-[#003C6C]' : 'text-slate-400'}`}
+          >
+              <CalendarIcon className={`w-6 h-6 ${activeTab === 'schedule' && !showAIChat ? 'stroke-[3px]' : ''}`} />
+              <span className="text-[10px] font-bold">Schedule</span>
+          </button>
+
+          {/* SAMMY BUTTON - Yellow Circle for visibility */}
+          <button 
+             onClick={() => { setShowAIChat(!showAIChat); }} 
+             className="flex flex-col items-center gap-1 -mt-8 relative z-50"
+          >
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg border-4 border-white ${showAIChat ? 'bg-[#003C6C] text-[#FDC700]' : 'bg-[#FDC700] text-[#003C6C]'}`}>
+                  <MessageSquare className="w-7 h-7 fill-current" />
+              </div>
+              <span className={`text-[10px] font-bold ${showAIChat ? 'text-[#003C6C]' : 'text-slate-400'}`}>Sammy</span>
+          </button>
+
+          <button 
+             onClick={() => { setActiveTab('about'); setShowAIChat(false); }} 
+             className={`flex flex-col items-center gap-1 p-2 w-16 ${activeTab === 'about' && !showAIChat ? 'text-[#003C6C]' : 'text-slate-400'}`}
+          >
+              <Info className={`w-6 h-6 ${activeTab === 'about' && !showAIChat ? 'stroke-[3px]' : ''}`} />
+              <span className="text-[10px] font-bold">About</span>
+          </button>
+      </div>
+
       {notification && (
-          <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 rounded-2xl text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-4 border animate-in slide-in-from-bottom-10 ${notification.type === 'error' ? 'bg-rose-600 border-rose-500' : 'bg-[#003C6C] border-[#FDC700]'}`}>
+          <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[1000] px-8 py-4 rounded-2xl text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-4 border animate-in slide-in-from-bottom-10 ${notification.type === 'error' ? 'bg-rose-600 border-rose-500' : 'bg-[#003C6C] border-[#FDC700]'}`}>
               {notification.type === 'error' ? <AlertCircle className="w-5 h-5"/> : <CheckCircle className="w-5 h-5 text-[#FDC700]"/>}
               <span className="font-bold text-xs tracking-tight">{notification.message}</span>
           </div>

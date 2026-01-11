@@ -33,31 +33,37 @@ const Header = ({
   };
 
   return (
-    <header className="bg-[#003C6C] border-b border-[#FDC700] sticky top-0 z-[60] shadow-xl shrink-0 h-[80px]">
-      <div className="w-full h-full px-8 grid grid-cols-[auto_1fr_auto] items-center gap-8">
-        <div className="flex items-center gap-1">
+    <header className="bg-[#003C6C] border-b border-[#FDC700] sticky top-0 z-[60] shadow-xl shrink-0 h-[70px] md:h-[80px] overflow-hidden select-none">
+      <div className="w-full h-full px-4 md:px-8 flex items-center justify-between">
+        
+        {/* LEFT: Logo Area */}
+        <div className="flex items-center gap-1 min-w-0 shrink">
           <img
             src={compassLogo}
             alt="AI Slug Navigator"
-            className="h-[104px] w-auto object-contain drop-shadow-md -my-3 relative z-10 top-[2px] -mr-7"
+            // Reduced mobile size slightly to prevent crowding
+            className="h-[60px] md:h-[104px] w-auto object-contain drop-shadow-md -my-3 relative z-10 top-[2px] -mr-4 md:-mr-7 shrink-0"
           />
 
-          <div className="leading-none -ml-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight leading-none">
+          <div className="leading-none -ml-1 flex flex-col justify-center">
+            <h1 className="text-lg md:text-2xl font-bold text-white tracking-tight leading-none whitespace-nowrap">
               AI Slug Navigator
             </h1>
-            <div className="mt-1.5 flex items-center gap-2 text-[11px] font-extrabold text-blue-100">
-              <span className="inline-flex items-center gap-1.5">
-                <GraduationCap className="w-3.5 h-3.5 text-[#FDC700]" />
-                <span>UC Santa Cruz</span>
+            <div className="mt-1 flex items-center gap-2 text-[10px] md:text-[11px] font-extrabold text-blue-100">
+              <span className="inline-flex items-center gap-1.5 shrink-0">
+                <GraduationCap className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#FDC700]" />
+                <span className="hidden md:inline">UC Santa Cruz</span>
+                <span className="md:hidden">UCSC</span>
               </span>
-              <span className="h-3 w-px bg-white/25" />
-              <span className="tracking-wide text-blue-50/95">{selectedSchool.term}</span>
+              <span className="h-3 w-px bg-white/25 shrink-0" />
+              {/* Removed truncate, allowed wrapping if absolutely necessary, but kept tight */}
+              <span className="tracking-wide text-blue-50/95 leading-tight">{selectedSchool.term}</span>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-center">
+        {/* CENTER: Tabs (HIDDEN ON MOBILE) */}
+        <div className="hidden md:flex justify-center absolute left-1/2 -translate-x-1/2">
           <div className="flex bg-[#002a4d]/60 backdrop-blur-md rounded-lg border border-white/10 shadow-lg overflow-hidden">
             {['search', 'schedule', 'about'].map((tab) => {
               const Icon = tab === 'search' ? Search 
@@ -82,10 +88,11 @@ const Header = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-4 justify-self-end">
+        {/* RIGHT: Actions */}
+        <div className="flex items-center gap-2 md:gap-4 justify-end shrink-0">
           <button
             onClick={onToggleChat}
-            className="h-12 flex items-center gap-3 pl-3 pr-5 rounded-xl transition-all cursor-pointer shadow-lg border-2 border-[#FDC700] bg-[#FDC700] text-[#003C6C] hover:bg-[#eec00e] active:translate-y-0.5 group overflow-visible"
+            className="hidden md:flex h-12 items-center gap-3 pl-3 pr-5 rounded-xl transition-all cursor-pointer shadow-lg border-2 border-[#FDC700] bg-[#FDC700] text-[#003C6C] hover:bg-[#eec00e] active:translate-y-0.5 group overflow-visible"
           >
             <span className="relative w-8 h-8 shrink-0 overflow-visible">
               <img
@@ -103,7 +110,7 @@ const Header = ({
             <div className="relative" ref={profileDropdownRef}>
               <button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="w-10 h-10 bg-[#FDC700] text-[#003C6C] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:scale-105 transition-transform"
+                className="w-8 h-8 md:w-10 md:h-10 bg-[#FDC700] text-[#003C6C] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:scale-105 transition-transform"
               >
                 {user.user_metadata?.full_name?.[0] || user.email?.[0] || 'U'}
               </button>
@@ -128,9 +135,9 @@ const Header = ({
           ) : (
             <button
               onClick={onLoginClick}
-              className="px-6 py-2.5 bg-[#FDC700] text-[#003C6C] font-bold rounded-xl text-sm hover:bg-[#eec00e] transition-all cursor-pointer border-2 border-[#FDC700] flex items-center gap-2 shadow-lg active:shadow-inner active:translate-y-0.5"
+              className="px-4 md:px-6 py-2 md:py-2.5 bg-[#FDC700] text-[#003C6C] font-bold rounded-xl text-xs md:text-sm hover:bg-[#eec00e] transition-all cursor-pointer border-2 border-[#FDC700] flex items-center gap-2 shadow-lg active:shadow-inner active:translate-y-0.5"
             >
-              <User className="w-4 h-4" /> Log in
+              <User className="w-4 h-4" /> <span className="hidden md:inline">Log in</span>
             </button>
           )}
         </div>
