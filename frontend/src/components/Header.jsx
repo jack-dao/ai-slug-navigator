@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GraduationCap, LogOut, User } from 'lucide-react';
+import { GraduationCap, LogOut, User, Search, CalendarDays, Info } from 'lucide-react';
 import { supabase } from '../supabase';
 
-// IMAGES
 import compassLogo from '../assets/logo-compass.png';
 import sammyChat from '../assets/sammy-chat.png';
 
@@ -36,7 +35,6 @@ const Header = ({
   return (
     <header className="bg-[#003C6C] border-b border-[#FDC700] sticky top-0 z-[60] shadow-xl shrink-0 h-[80px]">
       <div className="w-full h-full px-8 grid grid-cols-[auto_1fr_auto] items-center gap-8">
-        {/* LEFT: Logo Area */}
         <div className="flex items-center gap-1">
           <img
             src={compassLogo}
@@ -59,28 +57,31 @@ const Header = ({
           </div>
         </div>
 
-        {/* CENTER: Tabs */}
         <div className="flex justify-center">
           <div className="flex bg-[#002a4d]/60 backdrop-blur-md rounded-lg border border-white/10 shadow-lg overflow-hidden">
-            {/* ✅ UPDATED: Added 'about' tab */}
-            {['search', 'schedule', 'about'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-8 py-2.5 text-sm font-bold transition-all duration-200 rounded-none cursor-pointer ${
-                  activeTab === tab
-                    ? 'bg-white text-[#003C6C] shadow-sm'
-                    : 'text-blue-200 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {/* ✅ UPDATED: Label logic */}
-                {tab === 'schedule' ? 'My Schedule' : tab === 'about' ? 'About' : 'Search'}
-              </button>
-            ))}
+            {['search', 'schedule', 'about'].map((tab) => {
+              const Icon = tab === 'search' ? Search 
+                         : tab === 'schedule' ? CalendarDays 
+                         : Info;
+
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-8 py-2.5 text-sm font-bold transition-all duration-200 rounded-none cursor-pointer flex items-center gap-2 ${
+                    activeTab === tab
+                      ? 'bg-white text-[#003C6C] shadow-sm'
+                      : 'text-blue-200 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${activeTab === tab ? 'stroke-[3px]' : ''}`} />
+                  {tab === 'schedule' ? 'My Schedule' : tab === 'about' ? 'About' : 'Search'}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* RIGHT: Actions */}
         <div className="flex items-center gap-4 justify-self-end">
           <button
             onClick={onToggleChat}
