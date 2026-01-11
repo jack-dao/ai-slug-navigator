@@ -192,8 +192,10 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
             <div key={section.id} className={`p-6 hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
               <div className="flex flex-wrap gap-6">
                 
-                <div className="flex-[10_1_380px] flex flex-row gap-6">
-                    <div className="w-[180px] shrink-0">
+                {/* ⚡️ FIX: Changed from flex-row to flex-col on mobile so info doesn't hang off */}
+                <div className="flex-[10_1_380px] flex flex-col md:flex-row gap-4 md:gap-6">
+                    {/* Instructor Block: Full width on mobile, fixed width on desktop */}
+                    <div className="w-full md:w-[180px] shrink-0">
                         <p className="text-[10px] font-bold text-[#003C6C] mb-1">Instructor</p>
                         <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-start gap-2 group/prof text-left cursor-pointer w-full">
                             <div className="w-10 h-10 rounded-full bg-[#003C6C]/5 flex items-center justify-center text-[#003C6C] shrink-0">
@@ -249,7 +251,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                     </div>
                 </div>
 
-                <div className="flex-[1_1_220px] flex flex-col justify-center border-l border-slate-100 pl-6 border-dashed min-w-[200px]">
+                <div className="flex-[1_1_220px] flex flex-col justify-center md:border-l border-slate-100 md:pl-6 border-dashed min-w-[200px] border-t md:border-t-0 pt-4 md:pt-0">
                     <div className="flex items-start gap-4 mb-4">
                         <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
                             <Clock className="w-5 h-5" />
