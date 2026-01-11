@@ -35,7 +35,7 @@ const HomePage = ({ user, session }) => {
 
   const [showFilters, setShowFilters] = useState(() => window.innerWidth >= 768);
   
-  // Persist Chat State so reload keeps you in AI Chat
+  // Persist Chat State
   const [showAIChat, setShowAIChat] = useState(() => {
     try {
       return localStorage.getItem('showAIChat') === 'true';
@@ -44,7 +44,7 @@ const HomePage = ({ user, session }) => {
     }
   });
 
-  // Save Chat State on change
+  // Save Chat State
   useEffect(() => {
     localStorage.setItem('showAIChat', showAIChat);
   }, [showAIChat]);
@@ -309,7 +309,8 @@ const HomePage = ({ user, session }) => {
                 )}
                 
                 <main className="flex-1 min-w-0 bg-white relative z-0">
-                    <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-0 z-30 transition-all duration-200 shadow-sm">
+                    {/* ⚡️ FIX: Sticky Search Bar (top-70px on mobile, top-80px on desktop to clear Fixed Header) */}
+                    <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-[70px] md:top-[80px] z-30 transition-all duration-200 shadow-sm">
                         <div className="flex flex-row gap-3 md:gap-4 mb-4">
                             <button 
                                 onClick={() => setShowFilters(!showFilters)} 
@@ -430,7 +431,7 @@ const HomePage = ({ user, session }) => {
               <span className="text-[10px] font-bold">Schedule</span>
           </button>
 
-          {/* ⚡️ FIX: Flat Style (No Fill) for Sammy AI */}
+          {/* Sammy AI Button - Flat style, Outline only */}
           <button 
              onClick={() => { setShowAIChat(true); }} 
              className={`flex flex-col items-center gap-1 p-2 w-16 ${showAIChat ? 'text-[#003C6C]' : 'text-slate-400'}`}
