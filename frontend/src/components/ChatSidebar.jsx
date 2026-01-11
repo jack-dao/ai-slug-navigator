@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { X, Send, Sparkles, ArrowRight } from 'lucide-react';
+import { Send, Sparkles, ArrowRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import sammyChat from '../assets/sammy-chat.png';
 
@@ -22,18 +22,10 @@ const ChatSidebar = ({ onClose, messages, onSendMessage, isLoading, schoolName }
   return (
     <div className="w-full h-full bg-slate-50 flex flex-col relative">
       
-      {/* Floating Close Button (Mobile Only) */}
-      <button 
-        onClick={onClose}
-        className="absolute top-4 right-4 z-20 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-400 hover:text-slate-600 shadow-sm border border-slate-100 md:hidden"
-      >
-        <X className="w-5 h-5" />
-      </button>
+      {/* ⚡️ FIX: Removed 'X' close button */}
 
-      {/* ⚡️ FIX: Reduced top padding to p-4 (was p-5 or pt-8) to reduce gap */}
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto custom-scrollbar bg-[#F8FAFC] p-4 md:p-5">
         
-        {/* Unified Hero Header (Inside scroll view) */}
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-full py-4 md:py-8">
              
