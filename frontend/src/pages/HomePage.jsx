@@ -295,7 +295,6 @@ const HomePage = ({ user, session }) => {
         )}
 
         {/* Content Scroll Container */}
-        {/* ⚡️ FIX: Removed 'md:' prefix from overflow-y-auto and h-full to enable scrolling on mobile */}
         <div className="flex flex-1 min-w-0 transition-all duration-300 relative overflow-y-auto h-full custom-scrollbar">
             
             {activeTab === 'search' && (
@@ -316,7 +315,6 @@ const HomePage = ({ user, session }) => {
                 )}
                 
                 <main className="flex-1 min-w-0 bg-white relative z-0">
-                    {/* ⚡️ FIX: Changed top-[70px] to top-0 because the scroll container now starts BELOW the header */}
                     <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-0 z-30 transition-all duration-200 shadow-sm">
                         <div className="flex flex-row gap-3 md:gap-4 mb-4">
                             <button 
@@ -414,8 +412,16 @@ const HomePage = ({ user, session }) => {
                             </div>
                             <ScheduleList selectedCourses={selectedCourses} onRemove={removeCourse} />
                         </div>
-                        <div className="p-4 md:p-6 border-t border-slate-100 shrink-0 bg-white pb-24 md:pb-6">
+                        <div className="p-4 md:p-6 border-t border-slate-100 shrink-0 bg-white pb-24 md:pb-6 flex flex-col gap-2">
                             <button onClick={handleSaveSchedule} className="w-full py-4 bg-[#003C6C] text-white font-bold rounded-2xl hover:bg-[#002a4d] shadow-xl transition-all cursor-pointer active:scale-95 text-sm flex items-center justify-center gap-2"><Save className="w-4 h-4" /> Save Schedule</button>
+                            
+                            {/* ⚡️ FIX: w-fit + mx-auto centers the pill and keeps it small */}
+                            {notification && (
+                                <div className={`md:hidden w-fit mx-auto mt-2 px-6 py-3 rounded-2xl border flex items-center gap-3 animate-in slide-in-from-top-2 text-white shadow-sm ${notification.type === 'error' ? 'bg-rose-600 border-rose-500' : 'bg-[#003C6C] border-[#FDC700]'}`}>
+                                    {notification.type === 'error' ? <AlertCircle className="w-4 h-4 shrink-0"/> : <CheckCircle className="w-4 h-4 shrink-0 text-[#FDC700]"/>}
+                                    <span className="font-bold text-xs">{notification.message}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -491,7 +497,9 @@ const HomePage = ({ user, session }) => {
       </div>
 
       {notification && (
-          <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[1000] px-8 py-4 rounded-2xl text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-4 border animate-in slide-in-from-bottom-10 ${notification.type === 'error' ? 'bg-rose-600 border-rose-500' : 'bg-[#003C6C] border-[#FDC700]'}`}>
+          // ⚡️ Desktop Notification (Bottom) + Mobile Search Notification
+          // Hidden on Mobile IF we are in the Schedule tab (to avoid duplicates)
+          <div className={`${activeTab === 'schedule' ? 'hidden md:flex' : 'flex'} fixed bottom-24 left-1/2 -translate-x-1/2 z-[1000] px-8 py-4 rounded-2xl text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] items-center gap-4 border animate-in slide-in-from-bottom-10 ${notification.type === 'error' ? 'bg-rose-600 border-rose-500' : 'bg-[#003C6C] border-[#FDC700]'}`}>
               {notification.type === 'error' ? <AlertCircle className="w-5 h-5"/> : <CheckCircle className="w-5 h-5 text-[#FDC700]"/>}
               <span className="font-bold text-xs tracking-tight">{notification.message}</span>
           </div>
