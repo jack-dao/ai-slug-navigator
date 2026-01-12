@@ -143,12 +143,20 @@ const HomePage = ({ user, session }) => {
             if (cRes.ok) {
                 const courses = await cRes.json();
                 setAvailableCourses(courses);
-                try { localStorage.setItem('cachedCourses', JSON.stringify(courses)); } catch {}
+                try { localStorage.setItem('cachedCourses', JSON.stringify(courses)); 
+
+                } catch (e) {
+                    // ignore cache errors
+                }
             }
             if (rRes.ok) {
                 const ratings = await rRes.json();
                 setProfessorRatings(ratings);
-                try { localStorage.setItem('cachedRatings', JSON.stringify(ratings)); } catch {}
+                try { localStorage.setItem('cachedRatings', JSON.stringify(ratings)); 
+
+                } catch (e) {
+                    // ignore cache errors
+                }
             }
         } catch (e) { console.error("Network error:", e); }
     };

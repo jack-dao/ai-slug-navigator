@@ -3,7 +3,7 @@ import { Send, ArrowRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import sammyChat from '../assets/sammy-chat.png';
 
-const ChatSidebar = ({ onClose, messages = [], onSendMessage, isLoading, schoolName }) => {
+const ChatSidebar = ({ messages = [], onSendMessage, isLoading, schoolName }) => {
   const [input, setInput] = useState('');
   const chatContainerRef = useRef(null);
 
