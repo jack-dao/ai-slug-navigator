@@ -35,7 +35,6 @@ const HomePage = ({ user, session }) => {
     localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
 
-  // Filters default to CLOSED on mobile (< 768px) and OPEN on desktop (>= 768px)
   const [showFilters, setShowFilters] = useState(() => {
       if (typeof window !== 'undefined') {
           return window.innerWidth >= 768; 
@@ -199,18 +198,30 @@ const HomePage = ({ user, session }) => {
           name: `My Schedule`, 
           courses: selectedCourses.map(course => ({ 
               code: course.code, 
-              sectionCode: course.selectedSection?.sectionCode,
-              labCode: course.selectedSection?.selectedLab?.sectionCode
+              sectionCode: course.selectedSection?.sectionCode || '', 
+              labCode: course.selectedSection?.selectedLab?.sectionCode || ''
           })) 
       };
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/schedules`, { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, 
           body: JSON.stringify(payload) 
       });
-      if (response.ok) showNotification("Schedule saved successfully!", 'success');
-      else showNotification("Failed to save schedule", 'error');
-    } catch { showNotification("Server error", 'error'); } 
+      
+      if (response.ok) {
+          showNotification("Schedule saved successfully!", 'success');
+      } else if (response.status === 401) {
+          showNotification("Session expired. Please log in again.", 'error');
+          setShowAuthModal(true);
+      } else {
+          console.error("Save response error:", response.status, await response.text());
+          showNotification("Failed to save schedule", 'error');
+      }
+    } catch (e) { 
+        console.error("Save exception:", e);
+        showNotification("Server error", 'error'); 
+    } 
   };
 
   const viewProfessorDetails = (name) => {
@@ -253,7 +264,7 @@ const HomePage = ({ user, session }) => {
   const currentCourses = processedCourses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
-    <div className="min-h-screen w-full max-w-[100vw] bg-white flex flex-col font-sans relative md:h-screen md:overflow-hidden">
+    <div className="h-[100dvh] w-full max-w-[100vw] bg-white flex flex-col font-sans relative overflow-hidden">
       
       {/* Fixed Header */}
       <div className="fixed top-0 left-0 right-0 z-[60] bg-white border-b border-slate-200 h-[70px] md:h-[80px]">
@@ -269,11 +280,9 @@ const HomePage = ({ user, session }) => {
         />
       </div>
 
-      <div className="flex flex-row w-full min-h-screen pt-[70px] md:pt-[80px] pb-[80px] md:pb-0 relative md:h-full">
+      <div className="flex flex-row w-full h-full pt-[70px] md:pt-[80px] pb-[80px] md:pb-0 relative">
         
-        {/* ⚡️ FIX: Desktop Filter Sidebar (Moved OUTSIDE scroll container)
-            This is now a direct child of the flex container, so it stays fixed while the content scrolls. 
-        */}
+        {/* Desktop Filter Sidebar */}
         {showFilters && activeTab === 'search' && (
             <div className="hidden md:block w-72 shrink-0 border-r border-slate-100 bg-white h-full overflow-y-auto z-20 custom-scrollbar">
                 <FilterSidebar 
@@ -286,7 +295,8 @@ const HomePage = ({ user, session }) => {
         )}
 
         {/* Content Scroll Container */}
-        <div className="flex flex-1 min-w-0 transition-all duration-300 relative md:overflow-y-auto md:h-full custom-scrollbar">
+        {/* ⚡️ FIX: Removed 'md:' prefix from overflow-y-auto and h-full to enable scrolling on mobile */}
+        <div className="flex flex-1 min-w-0 transition-all duration-300 relative overflow-y-auto h-full custom-scrollbar">
             
             {activeTab === 'search' && (
               <>
@@ -306,15 +316,14 @@ const HomePage = ({ user, session }) => {
                 )}
                 
                 <main className="flex-1 min-w-0 bg-white relative z-0">
-                    <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-[70px] md:top-0 z-30 transition-all duration-200 shadow-sm">
+                    {/* ⚡️ FIX: Changed top-[70px] to top-0 because the scroll container now starts BELOW the header */}
+                    <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-0 z-30 transition-all duration-200 shadow-sm">
                         <div className="flex flex-row gap-3 md:gap-4 mb-4">
-                            {/* ⚡️ FIX: Improved Filter Button with Label */}
                             <button 
                                 onClick={() => setShowFilters(!showFilters)} 
                                 className={`px-4 py-3 md:py-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-center shrink-0 gap-2 group ${showFilters ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-white border-slate-200 text-[#003C6C] hover:border-[#003C6C]'}`}
                             >
                                 <Filter className="w-5 h-5" />
-                                {/* Added explicit text label */}
                                 <span className="font-bold text-sm">Filters</span>
                             </button>
 
@@ -405,7 +414,7 @@ const HomePage = ({ user, session }) => {
                             </div>
                             <ScheduleList selectedCourses={selectedCourses} onRemove={removeCourse} />
                         </div>
-                        <div className="p-4 md:p-6 border-t border-slate-100 shrink-0 bg-white">
+                        <div className="p-4 md:p-6 border-t border-slate-100 shrink-0 bg-white pb-24 md:pb-6">
                             <button onClick={handleSaveSchedule} className="w-full py-4 bg-[#003C6C] text-white font-bold rounded-2xl hover:bg-[#002a4d] shadow-xl transition-all cursor-pointer active:scale-95 text-sm flex items-center justify-center gap-2"><Save className="w-4 h-4" /> Save Schedule</button>
                         </div>
                     </div>

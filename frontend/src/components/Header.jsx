@@ -33,7 +33,8 @@ const Header = ({
   };
 
   return (
-    <header className="bg-[#003C6C] border-b border-[#FDC700] sticky top-0 z-[60] shadow-xl shrink-0 h-[70px] md:h-[80px] overflow-hidden select-none">
+    // ⚡️ FIX: Changed 'overflow-hidden' to 'overflow-visible' so the dropdown can appear below
+    <header className="bg-[#003C6C] border-b border-[#FDC700] sticky top-0 z-[60] shadow-xl shrink-0 h-[70px] md:h-[80px] overflow-visible select-none">
       <div className="w-full h-full px-4 md:px-8 flex items-center justify-between">
         
         {/* LEFT: Logo Area */}
@@ -41,7 +42,6 @@ const Header = ({
           <img
             src={compassLogo}
             alt="AI Slug Navigator"
-            // Reduced mobile size slightly to prevent crowding
             className="h-[60px] md:h-[104px] w-auto object-contain drop-shadow-md -my-3 relative z-10 top-[2px] -mr-4 md:-mr-7 shrink-0"
           />
 
@@ -56,7 +56,6 @@ const Header = ({
                 <span className="md:hidden">UCSC</span>
               </span>
               <span className="h-3 w-px bg-white/25 shrink-0" />
-              {/* Removed truncate, allowed wrapping if absolutely necessary, but kept tight */}
               <span className="tracking-wide text-blue-50/95 leading-tight">{selectedSchool.term}</span>
             </div>
           </div>

@@ -10,13 +10,14 @@ const saveSchedule = async (req, res) => {
             return res.status(400).json({ error: 'Courses are required' });
         }
 
+        // Delete existing schedule to overwrite
         await prisma.schedule.deleteMany({
             where: { userId: userId }
         });
 
         const schedule = await prisma.schedule.create({
             data: {
-                name,
+                name: name || 'My Schedule',
                 courses, 
                 userId
             },
@@ -26,6 +27,12 @@ const saveSchedule = async (req, res) => {
     }
     catch (error) {
         console.error('Save error:', error);
+        
+        // ⚡️ FIX: Handle "User Not Found" (Prisma P2003 = Foreign Key Fail)
+        if (error.code === 'P2003') {
+            return res.status(401).json({ error: 'User account no longer exists. Please log out and sign up again.' });
+        }
+
         res.status(500).json({ error: 'Failed to save schedule' });
     }
 };

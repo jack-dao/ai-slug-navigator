@@ -61,7 +61,6 @@ const CalendarView = ({ selectedCourses }) => {
   const timeSlots = [];
   for (let i = 0; i < TOTAL_HOURS; i++) {
     const hour = START_HOUR + i;
-    // ⚡️ FIX: Expanded time labels to include AM/PM
     const label = hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
     timeSlots.push({ label, index: i });
   }
@@ -89,7 +88,6 @@ const CalendarView = ({ selectedCourses }) => {
                   height: `${(1 / TOTAL_HOURS) * 100}%` 
                 }}
               >
-                {/* ⚡️ FIX: Adjusted width and text size for AM/PM labels */}
                 <div className="w-10 md:w-14 text-[9px] md:text-[10px] text-gray-400 text-right pr-1 md:pr-2 -translate-y-1/2 bg-white select-none relative z-10 whitespace-nowrap">
                   {slot.label}
                 </div>
@@ -102,7 +100,6 @@ const CalendarView = ({ selectedCourses }) => {
             
             <div className="absolute w-full border-t border-gray-100" style={{ top: '100%', left: 0 }}></div>
 
-            {/* ⚡️ FIX: Adjusted left offset (w-10) to match the wider time column */}
             <div className="absolute inset-0 left-10 md:left-14 right-0 top-0 bottom-0 grid grid-cols-5 pointer-events-none">
                {[1,2,3,4,5].forEach(i => <div key={i} className="relative h-full"></div>)}
 
@@ -139,16 +136,24 @@ const CalendarView = ({ selectedCourses }) => {
                           }}
                         >
                           <div className={`
-                            w-full h-full rounded px-0.5 md:px-1.5 py-0.5 md:py-1 text-[8px] md:text-[10px] leading-tight border-l-2 md:border-l-4 shadow-sm 
+                            w-full h-full rounded px-0.5 md:px-1.5 py-0.5 md:py-1 leading-tight border-l-2 md:border-l-4 shadow-sm 
                             hover:scale-[1.02] hover:z-50 transition-all cursor-pointer overflow-hidden flex flex-col justify-start
                             ${color.bg} ${color.border} ${color.text}
                             ${type === 'LAB' ? 'border-dashed opacity-90' : ''}
                           `}>
-                            <div className="font-bold truncate">{course.code}</div>
-                            <div className="truncate opacity-90 font-medium hidden md:block">
-                              {formatDisplayTime(item.startTime)} - {formatDisplayTime(item.endTime)}
+                            {/* Course Code */}
+                            <div className="font-bold truncate text-[8px] md:text-[10px]">{course.code}</div>
+                            
+                            {/* Time Range */}
+                            <div className="truncate opacity-90 font-medium text-[7px] md:text-[9px]">
+                              {formatDisplayTime(item.startTime)}-{formatDisplayTime(item.endTime)}
                             </div>
-                            <div className="truncate opacity-75 mt-auto hidden md:block">{item.location}</div>
+                            
+                            {/* Location - Prefix only for LAB/DISC */}
+                            <div className="truncate opacity-75 mt-auto text-[7px] md:text-[9px]">
+                                {type === 'LAB' && <span className="font-bold">DISC: </span>}
+                                {item.location}
+                            </div>
                           </div>
                         </div>
                       );

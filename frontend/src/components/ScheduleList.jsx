@@ -45,6 +45,7 @@ const ScheduleList = ({ selectedCourses, onRemove }) => {
                         </div>
                         
                         <div className="space-y-3">
+                            {/* Lecture Section */}
                             {course.selectedSection && (
                                 <div className="text-xs text-slate-700 bg-white p-2.5 rounded-lg border border-slate-100 shadow-sm">
                                     <div className="flex justify-between items-center mb-1">
@@ -60,12 +61,14 @@ const ScheduleList = ({ selectedCourses, onRemove }) => {
                                     {course.selectedSection.location && (
                                         <div className="flex items-center gap-2 text-slate-500">
                                             <MapPin className="w-3 h-3 text-slate-400" />
-                                            <span>{course.selectedSection.location}</span>
+                                            {/* ⚡️ FIX: Direct location text to avoid "LEC: LEC:" duplication */}
+                                            <span className="font-semibold">{course.selectedSection.location}</span>
                                         </div>
                                     )}
                                 </div>
                             )}
 
+                            {/* Discussion/Lab Section */}
                             {course.selectedSection?.selectedLab && (
                                 <div className="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                                     <div className="flex justify-between items-center mb-1">
@@ -81,7 +84,8 @@ const ScheduleList = ({ selectedCourses, onRemove }) => {
                                     {course.selectedSection.selectedLab.location && (
                                         <div className="flex items-center gap-2 text-slate-500">
                                             <MapPin className="w-3 h-3 text-slate-400" />
-                                            <span>{course.selectedSection.selectedLab.location}</span>
+                                            {/* ⚡️ FIX: Added "DISC:" prefix explicitly */}
+                                            <span className="font-semibold">DISC: {course.selectedSection.selectedLab.location}</span>
                                         </div>
                                     )}
                                 </div>
