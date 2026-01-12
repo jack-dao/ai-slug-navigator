@@ -41,76 +41,76 @@ const ChatSidebar = ({ onClose, messages = [], onSendMessage, isLoading, schoolN
         </div>
       </div>
 
+      {/* Scroll area */}
       <div
         ref={chatContainerRef}
-        className={`flex-1 custom-scrollbar px-4 md:px-5 py-5 ${
-          messages.length === 0 ? 'overflow-hidden' : 'overflow-y-auto'
-        }`}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar px-4 md:px-5 py-5"
       >
         {messages.length === 0 ? (
-          <div className="w-full max-w-[420px] mx-auto pt-2 md:pt-3 pb-16">
-            {/* Hero (no image) */}
-            <div className="flex flex-col items-center text-center">
-              <h2 className="text-3xl font-black text-[#003C6C] tracking-tight">
-                How can I help?
-              </h2>
+          /* Mobile fix: center the whole empty state vertically */
+          <div className="min-h-full flex flex-col justify-center md:justify-start">
+            <div className="w-full max-w-[420px] mx-auto pt-4 md:pt-3 pb-6 md:pb-16">
+              <div className="flex flex-col items-center text-center">
+                <h2 className="text-3xl font-black text-[#003C6C] tracking-tight">
+                  How can I help?
+                </h2>
 
-              <p className="mt-3 text-base font-medium text-slate-600 leading-relaxed">
-                Ask for easy classes, conflict free schedules, or ways to avoid early lectures.
-              </p>
-            </div>
-
-            {/* Suggested prompts */}
-            <div className="mt-8">
-              <p className="text-sm font-bold text-slate-400 mb-3">Suggested prompts</p>
-
-              <div className="space-y-3">
-                <button
-                  onClick={() =>
-                    !isLoading && onSendMessage('What is an easy GE to take that fits in with my schedule?')
-                  }
-                  className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
-                  disabled={isLoading}
-                >
-                  <div className="flex-1">
-                    <div className="text-base font-extrabold text-slate-800">Find an easy GE</div>
-                    <div className="text-sm font-medium text-slate-500 mt-1">
-                      That fits my current schedule
-                    </div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-slate-300 mt-1" />
-                </button>
-
-                <button
-                  onClick={() => !isLoading && onSendMessage('Build a schedule with no Friday classes')}
-                  className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
-                  disabled={isLoading}
-                >
-                  <div className="flex-1">
-                    <div className="text-base font-extrabold text-slate-800">No Friday classes</div>
-                    <div className="text-sm font-medium text-slate-500 mt-1">Maximize my weekend</div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-slate-300 mt-1" />
-                </button>
-
-                <button
-                  onClick={() => !isLoading && onSendMessage('What should I take to balance my course workload?')}
-                  className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
-                  disabled={isLoading}
-                >
-                  <div className="flex-1">
-                    <div className="text-base font-extrabold text-slate-800">Balance workload</div>
-                    <div className="text-sm font-medium text-slate-500 mt-1">
-                      Mix major reqs with lighter classes
-                    </div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-slate-300 mt-1" />
-                </button>
+                <p className="mt-3 text-base font-medium text-slate-600 leading-relaxed">
+                  Ask for easy classes, conflict free schedules, or ways to avoid early lectures.
+                </p>
               </div>
 
-              <p className="mt-6 text-sm font-semibold text-slate-400 text-center">
-                Tip: mention units, days, and any “no mornings” rules you have.
-              </p>
+              <div className="mt-8">
+                <p className="text-sm font-bold text-slate-400 mb-3">Suggested prompts</p>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() =>
+                      !isLoading && onSendMessage('What is an easy GE to take that fits in with my schedule?')
+                    }
+                    className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
+                    disabled={isLoading}
+                  >
+                    <div className="flex-1">
+                      <div className="text-base font-extrabold text-slate-800">Find an easy GE</div>
+                      <div className="text-sm font-medium text-slate-500 mt-1">
+                        That fits my current schedule
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-slate-300 mt-1" />
+                  </button>
+
+                  <button
+                    onClick={() => !isLoading && onSendMessage('Build a schedule with no Friday classes')}
+                    className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
+                    disabled={isLoading}
+                  >
+                    <div className="flex-1">
+                      <div className="text-base font-extrabold text-slate-800">No Friday classes</div>
+                      <div className="text-sm font-medium text-slate-500 mt-1">Maximize my weekend</div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-slate-300 mt-1" />
+                  </button>
+
+                  <button
+                    onClick={() => !isLoading && onSendMessage('What should I take to balance my course workload?')}
+                    className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
+                    disabled={isLoading}
+                  >
+                    <div className="flex-1">
+                      <div className="text-base font-extrabold text-slate-800">Balance workload</div>
+                      <div className="text-sm font-medium text-slate-500 mt-1">
+                        Mix major reqs with lighter classes
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-slate-300 mt-1" />
+                  </button>
+                </div>
+
+                <p className="mt-6 text-sm font-semibold text-slate-400 text-center">
+                  Tip: mention units, days, and any “no mornings” rules you have.
+                </p>
+              </div>
             </div>
           </div>
         ) : (
@@ -158,10 +158,11 @@ const ChatSidebar = ({ onClose, messages = [], onSendMessage, isLoading, schoolN
             className="w-full resize-none pr-14 pl-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-[#003C6C] outline-none transition-all text-sm font-bold text-slate-700 placeholder:text-slate-400"
           />
 
+          {/* Centered properly: top-0 bottom-0 my-auto */}
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-xl bg-[#FDC700] text-[#003C6C] flex items-center justify-center shadow-sm hover:bg-[#e5b600] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="absolute right-2 top-0 bottom-0 my-auto w-11 h-11 rounded-xl bg-[#FDC700] text-[#003C6C] flex items-center justify-center shadow-sm hover:bg-[#e5b600] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Send message"
           >
             <Send className="w-4 h-4" />
