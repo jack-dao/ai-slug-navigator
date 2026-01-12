@@ -35,7 +35,6 @@ const HomePage = ({ user, session }) => {
 
   const [showFilters, setShowFilters] = useState(() => window.innerWidth >= 768);
   
-  // Persist Chat State
   const [showAIChat, setShowAIChat] = useState(() => {
     try {
       return localStorage.getItem('showAIChat') === 'true';
@@ -44,7 +43,6 @@ const HomePage = ({ user, session }) => {
     }
   });
 
-  // Save Chat State
   useEffect(() => {
     localStorage.setItem('showAIChat', showAIChat);
   }, [showAIChat]);
@@ -80,39 +78,30 @@ const HomePage = ({ user, session }) => {
   const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
+    // Scroll the window to top on mobile, or just rely on new layout behavior
     window.scrollTo(0, 0);
     sessionStorage.setItem('currentPage', currentPage);
   }, [currentPage]);
 
-  // Lock body scroll logic
+  // ⚡️ FIX: Mobile-Only Scroll Lock
+  // On desktop, we use CSS layout to handle scrolling, so we don't need to lock the body.
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        if (showAIChat || (showFilters && activeTab === 'search')) {
-            document.body.style.overflow = 'hidden';
-            document.documentElement.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-            document.documentElement.style.overflow = '';
-        }
+    const handleScrollLock = () => {
+      const isMobile = window.innerWidth < 768;
+      
+      if (isMobile && (showAIChat || (showFilters && activeTab === 'search'))) {
+          document.body.style.overflow = 'hidden';
+          document.documentElement.style.overflow = 'hidden';
       } else {
-        setShowFilters(true);
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
+          document.body.style.overflow = '';
+          document.documentElement.style.overflow = '';
       }
     };
-    
-    if (window.innerWidth < 768 && (showAIChat || (showFilters && activeTab === 'search'))) {
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
-    } else {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-    }
 
-    window.addEventListener('resize', handleResize);
+    handleScrollLock();
+    window.addEventListener('resize', handleScrollLock);
     return () => {
-        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('resize', handleScrollLock);
         document.body.style.overflow = '';
         document.documentElement.style.overflow = '';
     };
@@ -260,7 +249,8 @@ const HomePage = ({ user, session }) => {
   const currentCourses = processedCourses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
-    <div className="min-h-screen w-full bg-white flex flex-col font-sans relative">
+    // ⚡️ FIX: Desktop Lock - 'md:h-screen md:overflow-hidden' prevents the entire window from scrolling on desktop
+    <div className="min-h-screen w-full max-w-[100vw] bg-white flex flex-col font-sans relative md:h-screen md:overflow-hidden">
       
       {/* Fixed Header */}
       <div className="fixed top-0 left-0 right-0 z-[60] bg-white border-b border-slate-200 h-[70px] md:h-[80px]">
@@ -276,8 +266,17 @@ const HomePage = ({ user, session }) => {
         />
       </div>
 
-      <div className="flex flex-row w-full min-h-screen pt-[70px] md:pt-[80px] pb-[80px] md:pb-0 relative">
-        <div className="flex flex-1 min-w-0 transition-all duration-300 relative">
+      {/* ⚡️ FIX: Main Layout Wrapper
+         - 'md:h-full' ensures it respects the fixed screen height
+         - 'md:pb-0' removes bottom padding since we scroll internally now
+      */}
+      <div className="flex flex-row w-full min-h-screen pt-[70px] md:pt-[80px] pb-[80px] md:pb-0 relative md:h-full">
+        
+        {/* ⚡️ FIX: Content Scroll Container
+           - 'md:overflow-y-auto' moves the scrollbar HERE, to the left of the sidebar
+           - 'md:h-full' makes it fill the vertical space
+        */}
+        <div className="flex flex-1 min-w-0 transition-all duration-300 relative md:overflow-y-auto md:h-full custom-scrollbar">
             
             {activeTab === 'search' && (
               <>
@@ -309,8 +308,11 @@ const HomePage = ({ user, session }) => {
                 )}
                 
                 <main className="flex-1 min-w-0 bg-white relative z-0">
-                    {/* ⚡️ FIX: Sticky Search Bar (top-70px on mobile, top-80px on desktop to clear Fixed Header) */}
-                    <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-[70px] md:top-[80px] z-30 transition-all duration-200 shadow-sm">
+                    {/* ⚡️ FIX: Search Bar Sticky Position
+                       - Changed to 'md:top-0' because the scroll container now starts BELOW the header.
+                       - Keeps 'top-[70px]' for mobile where window scrolls.
+                    */}
+                    <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-[70px] md:top-0 z-30 transition-all duration-200 shadow-sm">
                         <div className="flex flex-row gap-3 md:gap-4 mb-4">
                             <button 
                                 onClick={() => setShowFilters(!showFilters)} 
@@ -397,7 +399,9 @@ const HomePage = ({ user, session }) => {
 
         {/* AI Chat Sidebar */}
         {showAIChat && (
-            <div className="fixed inset-0 z-50 bg-white border-l border-[#FDC700] shadow-xl shrink-0 flex flex-col md:sticky md:top-[80px] md:h-[calc(100vh-80px)] md:w-[400px] md:bottom-auto pt-[70px] pb-[80px] md:pt-0 md:pb-0">
+            // ⚡️ FIX: Desktop Sidebar positioning
+            // Removed 'sticky', 'top' etc. Now it's just a flex child filling the height.
+            <div className="fixed inset-0 z-50 bg-white border-l border-[#FDC700] shadow-xl shrink-0 flex flex-col md:relative md:h-full md:w-[400px] md:bottom-auto pt-[70px] pb-[80px] md:pt-0 md:pb-0">
                  <div className="w-full h-full overflow-hidden">
                     <ChatSidebar 
                         isOpen={true} 
@@ -431,7 +435,6 @@ const HomePage = ({ user, session }) => {
               <span className="text-[10px] font-bold">Schedule</span>
           </button>
 
-          {/* Sammy AI Button - Flat style, Outline only */}
           <button 
              onClick={() => { setShowAIChat(true); }} 
              className={`flex flex-col items-center gap-1 p-2 w-16 ${showAIChat ? 'text-[#003C6C]' : 'text-slate-400'}`}
