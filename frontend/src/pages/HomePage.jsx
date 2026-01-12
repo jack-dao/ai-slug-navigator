@@ -410,9 +410,9 @@ const HomePage = ({ user, session }) => {
                             <button onClick={handleSaveSchedule} className="w-full py-4 bg-[#003C6C] text-white font-bold rounded-2xl hover:bg-[#002a4d] shadow-xl transition-all cursor-pointer active:scale-95 text-sm flex items-center justify-center gap-2"><Save className="w-4 h-4" /> Save Schedule</button>
                             
                             {notification && (
-                                <div className={`md:hidden w-fit mx-auto mt-2 px-6 py-3 rounded-2xl border flex items-center gap-3 animate-in slide-in-from-top-2 text-white shadow-sm ${notification.type === 'error' ? 'bg-rose-600 border-rose-500' : 'bg-[#003C6C] border-[#FDC700]'}`}>
-                                    {notification.type === 'error' ? <AlertCircle className="w-4 h-4 shrink-0"/> : <CheckCircle className="w-4 h-4 shrink-0 text-[#FDC700]"/>}
-                                    <span className="font-bold text-xs">{notification.message}</span>
+                                <div className={`md:hidden w-fit mx-auto mt-4 px-8 py-4 rounded-2xl border flex items-center gap-4 animate-in slide-in-from-top-2 text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] ${notification.type === 'error' ? 'bg-rose-600 border-rose-500' : 'bg-[#003C6C] border-[#FDC700]'}`}>
+                                    {notification.type === 'error' ? <AlertCircle className="w-5 h-5"/> : <CheckCircle className="w-5 h-5 text-[#FDC700]"/>}
+                                    <span className="font-bold text-xs tracking-tight">{notification.message}</span>
                                 </div>
                             )}
                         </div>
@@ -452,7 +452,6 @@ const HomePage = ({ user, session }) => {
 
       </div>
       
-      {/* Mobile Bottom Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-[80px] bg-white border-t border-slate-200 flex justify-around items-center z-[999] pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
           <button 
              onClick={() => { setActiveTab('search'); setShowAIChat(false); }} 
