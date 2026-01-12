@@ -29,11 +29,19 @@ const HomePage = ({ user, session }) => {
     return localStorage.getItem('activeTab') || 'search';
   });
 
+  const [mobileScheduleView, setMobileScheduleView] = useState('list');
+
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
 
-  const [showFilters, setShowFilters] = useState(() => window.innerWidth >= 768);
+  // Filters default to CLOSED on mobile (< 768px) and OPEN on desktop (>= 768px)
+  const [showFilters, setShowFilters] = useState(() => {
+      if (typeof window !== 'undefined') {
+          return window.innerWidth >= 768; 
+      }
+      return false;
+  });
   
   const [showAIChat, setShowAIChat] = useState(() => {
     try {
@@ -78,17 +86,13 @@ const HomePage = ({ user, session }) => {
   const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
-    // Scroll the window to top on mobile, or just rely on new layout behavior
     window.scrollTo(0, 0);
     sessionStorage.setItem('currentPage', currentPage);
   }, [currentPage]);
 
-  // ⚡️ FIX: Mobile-Only Scroll Lock
-  // On desktop, we use CSS layout to handle scrolling, so we don't need to lock the body.
   useEffect(() => {
     const handleScrollLock = () => {
       const isMobile = window.innerWidth < 768;
-      
       if (isMobile && (showAIChat || (showFilters && activeTab === 'search'))) {
           document.body.style.overflow = 'hidden';
           document.documentElement.style.overflow = 'hidden';
@@ -249,7 +253,6 @@ const HomePage = ({ user, session }) => {
   const currentCourses = processedCourses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
-    // ⚡️ FIX: Desktop Lock - 'md:h-screen md:overflow-hidden' prevents the entire window from scrolling on desktop
     <div className="min-h-screen w-full max-w-[100vw] bg-white flex flex-col font-sans relative md:h-screen md:overflow-hidden">
       
       {/* Fixed Header */}
@@ -266,16 +269,23 @@ const HomePage = ({ user, session }) => {
         />
       </div>
 
-      {/* ⚡️ FIX: Main Layout Wrapper
-         - 'md:h-full' ensures it respects the fixed screen height
-         - 'md:pb-0' removes bottom padding since we scroll internally now
-      */}
       <div className="flex flex-row w-full min-h-screen pt-[70px] md:pt-[80px] pb-[80px] md:pb-0 relative md:h-full">
         
-        {/* ⚡️ FIX: Content Scroll Container
-           - 'md:overflow-y-auto' moves the scrollbar HERE, to the left of the sidebar
-           - 'md:h-full' makes it fill the vertical space
+        {/* ⚡️ FIX: Desktop Filter Sidebar (Moved OUTSIDE scroll container)
+            This is now a direct child of the flex container, so it stays fixed while the content scrolls. 
         */}
+        {showFilters && activeTab === 'search' && (
+            <div className="hidden md:block w-72 shrink-0 border-r border-slate-100 bg-white h-full overflow-y-auto z-20 custom-scrollbar">
+                <FilterSidebar 
+                    filters={filters}
+                    setFilters={setFilters}
+                    onReset={resetFilters}
+                    activeTab={activeTab}
+                />
+            </div>
+        )}
+
+        {/* Content Scroll Container */}
         <div className="flex flex-1 min-w-0 transition-all duration-300 relative md:overflow-y-auto md:h-full custom-scrollbar">
             
             {activeTab === 'search' && (
@@ -294,31 +304,18 @@ const HomePage = ({ user, session }) => {
                         </div>
                     </div>
                 )}
-
-                {/* Desktop Filter Sidebar */}
-                {showFilters && (
-                    <div className="hidden md:block h-full">
-                        <FilterSidebar 
-                            filters={filters}
-                            setFilters={setFilters}
-                            onReset={resetFilters}
-                            activeTab={activeTab}
-                        />
-                    </div>
-                )}
                 
                 <main className="flex-1 min-w-0 bg-white relative z-0">
-                    {/* ⚡️ FIX: Search Bar Sticky Position
-                       - Changed to 'md:top-0' because the scroll container now starts BELOW the header.
-                       - Keeps 'top-[70px]' for mobile where window scrolls.
-                    */}
                     <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white sticky top-[70px] md:top-0 z-30 transition-all duration-200 shadow-sm">
                         <div className="flex flex-row gap-3 md:gap-4 mb-4">
+                            {/* ⚡️ FIX: Improved Filter Button with Label */}
                             <button 
                                 onClick={() => setShowFilters(!showFilters)} 
-                                className={`p-3 md:p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-center shrink-0 ${showFilters ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-white border-slate-200 text-[#003C6C] hover:border-[#003C6C]'}`}
+                                className={`px-4 py-3 md:py-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-center shrink-0 gap-2 group ${showFilters ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-white border-slate-200 text-[#003C6C] hover:border-[#003C6C]'}`}
                             >
                                 <Filter className="w-5 h-5" />
+                                {/* Added explicit text label */}
+                                <span className="font-bold text-sm">Filters</span>
                             </button>
 
                             <div className="relative flex-1 group min-w-0">
@@ -368,9 +365,39 @@ const HomePage = ({ user, session }) => {
             )}
 
             {activeTab === 'schedule' && (
-                <div className="flex flex-col md:flex-row flex-1 h-full">
-                    <div className="w-full md:w-[400px] shrink-0 border-b md:border-r border-slate-100 flex flex-col z-10 bg-white max-h-[35vh] md:max-h-full overflow-y-auto custom-scrollbar">
-                        <div className="p-4 md:p-6 flex-1">
+                <div className="flex flex-col md:flex-row flex-1 h-full overflow-hidden">
+                    
+                    {/* Mobile Toggle */}
+                    <div className="md:hidden px-4 py-3 bg-white border-b border-slate-100 shrink-0 sticky top-0 z-30">
+                        <div className="flex p-1 bg-slate-100 rounded-xl">
+                            <button
+                                onClick={() => setMobileScheduleView('list')}
+                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                                    mobileScheduleView === 'list'
+                                        ? 'bg-white text-[#003C6C] shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                            >
+                                List View
+                            </button>
+                            <button
+                                onClick={() => setMobileScheduleView('calendar')}
+                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                                    mobileScheduleView === 'calendar'
+                                        ? 'bg-white text-[#003C6C] shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                            >
+                                Calendar View
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Left Column: Schedule List */}
+                    <div className={`${
+                        mobileScheduleView === 'list' ? 'flex' : 'hidden'
+                    } md:flex w-full md:w-[400px] shrink-0 border-b md:border-r border-slate-100 flex-col z-10 bg-white h-full md:max-h-full overflow-hidden`}>
+                        <div className="p-4 md:p-6 flex-1 overflow-y-auto custom-scrollbar">
                             <div className="pb-4 mb-4 border-b border-slate-100 flex justify-center">
                                 <h3 className="font-bold text-[#003C6C] text-lg flex items-center gap-2">
                                     <BookOpen className="w-5 h-5"/> My Schedule
@@ -382,9 +409,13 @@ const HomePage = ({ user, session }) => {
                             <button onClick={handleSaveSchedule} className="w-full py-4 bg-[#003C6C] text-white font-bold rounded-2xl hover:bg-[#002a4d] shadow-xl transition-all cursor-pointer active:scale-95 text-sm flex items-center justify-center gap-2"><Save className="w-4 h-4" /> Save Schedule</button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-hidden relative">
-                        <div className="h-full w-full overflow-x-auto overflow-y-hidden">
-                             <div className="min-w-[800px] h-full">
+
+                    {/* Right Column: Calendar View */}
+                    <div className={`${
+                        mobileScheduleView === 'calendar' ? 'flex' : 'hidden'
+                    } md:flex flex-1 overflow-hidden relative h-full`}>
+                        <div className="h-full w-full overflow-y-auto overflow-x-hidden">
+                             <div className="w-full h-full min-w-0">
                                 <CalendarView selectedCourses={selectedCourses} />
                              </div>
                         </div>
@@ -399,8 +430,6 @@ const HomePage = ({ user, session }) => {
 
         {/* AI Chat Sidebar */}
         {showAIChat && (
-            // ⚡️ FIX: Desktop Sidebar positioning
-            // Removed 'sticky', 'top' etc. Now it's just a flex child filling the height.
             <div className="fixed inset-0 z-50 bg-white border-l border-[#FDC700] shadow-xl shrink-0 flex flex-col md:relative md:h-full md:w-[400px] md:bottom-auto pt-[70px] pb-[80px] md:pt-0 md:pb-0">
                  <div className="w-full h-full overflow-hidden">
                     <ChatSidebar 
@@ -417,7 +446,7 @@ const HomePage = ({ user, session }) => {
 
       </div>
       
-      {/* 📱 MOBILE BOTTOM NAVIGATION BAR */}
+      {/* Mobile Bottom Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-[80px] bg-white border-t border-slate-200 flex justify-around items-center z-[999] pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
           <button 
              onClick={() => { setActiveTab('search'); setShowAIChat(false); }} 

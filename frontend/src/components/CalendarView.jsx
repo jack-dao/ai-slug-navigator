@@ -48,7 +48,7 @@ function parseTime(timeStr) {
 
 function formatDisplayTime(timeStr) {
   if (!timeStr || timeStr === 'TBA') return '';
-  return timeStr.replace(/^0/, '').replace(/([AP]M)/i, ' $1');
+  return timeStr.replace(/^0/, '').replace(/([AP]M)/i, '$1'); 
 }
 
 const CalendarView = ({ selectedCourses }) => {
@@ -61,23 +61,25 @@ const CalendarView = ({ selectedCourses }) => {
   const timeSlots = [];
   for (let i = 0; i < TOTAL_HOURS; i++) {
     const hour = START_HOUR + i;
+    // ⚡️ FIX: Expanded time labels to include AM/PM
     const label = hour === 12 ? "12 PM" : hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
     timeSlots.push({ label, index: i });
   }
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-lg">
-      <div className="flex border-b border-gray-200 bg-gray-50 h-10 shrink-0 z-20 relative">
-        <div className="w-14 border-r bg-gray-50"></div>
+    <div className="h-full flex flex-col bg-white rounded-lg w-full">
+      <div className="flex border-b border-gray-200 bg-gray-50 h-8 md:h-10 shrink-0 z-20 relative">
+        <div className="w-10 md:w-14 border-r bg-gray-50"></div> 
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(day => (
-          <div key={day} className="flex-1 text-sm font-bold text-gray-700 flex items-center justify-center border-r last:border-r-0 bg-gray-50">
-            {day}
+          <div key={day} className="flex-1 text-[10px] md:text-sm font-bold text-gray-700 flex items-center justify-center border-r last:border-r-0 bg-gray-50 truncate">
+            <span className="md:hidden">{day.charAt(0)}</span>
+            <span className="hidden md:inline">{day}</span>
           </div>
         ))}
       </div>
 
       <div className="relative flex-1 w-full overflow-hidden">
-        <div className="absolute inset-0 top-3 bottom-0"> 
+        <div className="absolute inset-0 top-2 bottom-0"> 
             {timeSlots.map((slot) => (
               <div 
                 key={slot.index}
@@ -87,7 +89,8 @@ const CalendarView = ({ selectedCourses }) => {
                   height: `${(1 / TOTAL_HOURS) * 100}%` 
                 }}
               >
-                <div className="w-14 text-[10px] text-gray-400 text-right pr-2 -translate-y-1/2 bg-white select-none relative z-10">
+                {/* ⚡️ FIX: Adjusted width and text size for AM/PM labels */}
+                <div className="w-10 md:w-14 text-[9px] md:text-[10px] text-gray-400 text-right pr-1 md:pr-2 -translate-y-1/2 bg-white select-none relative z-10 whitespace-nowrap">
                   {slot.label}
                 </div>
                 
@@ -99,7 +102,8 @@ const CalendarView = ({ selectedCourses }) => {
             
             <div className="absolute w-full border-t border-gray-100" style={{ top: '100%', left: 0 }}></div>
 
-            <div className="absolute inset-0 left-14 right-0 top-0 bottom-0 grid grid-cols-5 pointer-events-none">
+            {/* ⚡️ FIX: Adjusted left offset (w-10) to match the wider time column */}
+            <div className="absolute inset-0 left-10 md:left-14 right-0 top-0 bottom-0 grid grid-cols-5 pointer-events-none">
                {[1,2,3,4,5].forEach(i => <div key={i} className="relative h-full"></div>)}
 
                <div className="absolute inset-0 pointer-events-auto">
@@ -130,21 +134,21 @@ const CalendarView = ({ selectedCourses }) => {
                             height: `${heightPercent}%`,
                             left: `${dayIndex * 20}%`, 
                             width: '20%',
-                            padding: '2px',
+                            padding: '1px',
                             zIndex: 30
                           }}
                         >
                           <div className={`
-                            w-full h-full rounded px-1.5 py-1 text-[10px] leading-tight border-l-4 shadow-sm 
+                            w-full h-full rounded px-0.5 md:px-1.5 py-0.5 md:py-1 text-[8px] md:text-[10px] leading-tight border-l-2 md:border-l-4 shadow-sm 
                             hover:scale-[1.02] hover:z-50 transition-all cursor-pointer overflow-hidden flex flex-col justify-start
                             ${color.bg} ${color.border} ${color.text}
                             ${type === 'LAB' ? 'border-dashed opacity-90' : ''}
                           `}>
-                            <div className="font-bold truncate">{course.code} {type === 'LAB' && '(Lab)'}</div>
-                            <div className="truncate opacity-90 font-medium">
+                            <div className="font-bold truncate">{course.code}</div>
+                            <div className="truncate opacity-90 font-medium hidden md:block">
                               {formatDisplayTime(item.startTime)} - {formatDisplayTime(item.endTime)}
                             </div>
-                            <div className="truncate opacity-75 mt-auto">{item.location}</div>
+                            <div className="truncate opacity-75 mt-auto hidden md:block">{item.location}</div>
                           </div>
                         </div>
                       );
