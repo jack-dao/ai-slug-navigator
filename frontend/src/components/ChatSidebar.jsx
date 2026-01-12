@@ -1,139 +1,175 @@
-import React, { useEffect, useRef } from 'react';
-import { Send, Sparkles, ArrowRight } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Send, ArrowRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import sammyChat from '../assets/sammy-chat.png';
 
-const ChatSidebar = ({ onClose, messages, onSendMessage, isLoading, schoolName }) => {
-  const [input, setInput] = React.useState('');
+const ChatSidebar = ({ onClose, messages = [], onSendMessage, isLoading, schoolName }) => {
+  const [input, setInput] = useState('');
   const chatContainerRef = useRef(null);
 
   useEffect(() => {
-    if (chatContainerRef.current) {
+    if (chatContainerRef.current && messages.length > 0) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
-    onSendMessage(input);
+    onSendMessage(input.trim());
     setInput('');
   };
 
   return (
-    <div className="w-full h-full bg-slate-50 flex flex-col relative">
-      
-      {/* ⚡️ FIX: Removed 'X' close button */}
+    <div className="w-full h-full flex flex-col bg-[#F8FAFC]">
+      {/* Desktop only header */}
+      <div className="hidden md:flex items-center gap-4 px-5 py-4 bg-[#003C6C] border-b border-[#FDC700]">
+        {/* Bigger logo */}
+        <div className="w-20 h-20 shrink-0 flex items-center justify-center overflow-visible">
+          <img
+            src={sammyChat}
+            alt="Sammy"
+            className="w-full h-full object-contain drop-shadow-sm scale-[2.35] origin-center"
+            draggable={false}
+          />
+        </div>
 
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto custom-scrollbar bg-[#F8FAFC] p-4 md:p-5">
-        
+        <div className="min-w-0">
+          <div className="text-white font-extrabold text-lg leading-tight">Sammy AI</div>
+          <div className="text-white/80 text-sm font-semibold leading-tight">
+            {(schoolName || 'UCSC')} academic advisor
+          </div>
+        </div>
+      </div>
+
+      <div
+        ref={chatContainerRef}
+        className={`flex-1 custom-scrollbar px-4 md:px-5 py-5 ${
+          messages.length === 0 ? 'overflow-hidden' : 'overflow-y-auto'
+        }`}
+      >
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-full py-4 md:py-8">
-             
-             {/* Sammy Hero */}
-             <div className="relative w-32 h-32 md:w-40 md:h-40 mb-6">
-                <div className="absolute inset-0 bg-[#FDC700]/20 blur-2xl rounded-full transform scale-90" />
-                <img
-                  src={sammyChat}
-                  alt="Sammy"
-                  className="relative w-full h-full object-contain drop-shadow-xl z-10"
-                />
-             </div>
-             
-             <h3 className="font-black text-[#003C6C] text-2xl tracking-tight mb-2">Sammy AI</h3>
-             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6 text-center">{schoolName || 'UCSC'} Academic Advisor</p>
-             
-             <p className="text-sm font-medium text-slate-500 max-w-[280px] mx-auto leading-relaxed text-center mb-10">
-                I can help you find easy classes, build the perfect schedule, or avoid 8am lectures.
+          <div className="w-full max-w-[420px] mx-auto pt-2 md:pt-3 pb-16">
+            {/* Hero (no image) */}
+            <div className="flex flex-col items-center text-center">
+              <h2 className="text-3xl font-black text-[#003C6C] tracking-tight">
+                How can I help?
+              </h2>
+
+              <p className="mt-3 text-base font-medium text-slate-600 leading-relaxed">
+                Ask for easy classes, conflict free schedules, or ways to avoid early lectures.
               </p>
+            </div>
 
-             {/* Suggested Prompts */}
-             <div className="w-full max-w-sm space-y-3">
-               <p className="text-xs font-bold text-slate-400 ml-1 mb-2">Suggested Prompts</p>
+            {/* Suggested prompts */}
+            <div className="mt-8">
+              <p className="text-sm font-bold text-slate-400 mb-3">Suggested prompts</p>
 
-               <button
-                 onClick={() => !isLoading && onSendMessage('What is an easy GE to take that fits in with my schedule?')}
-                 className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all group flex items-start gap-3 cursor-pointer"
-                 disabled={isLoading}
-               >
-                 <div className="flex-1">
-                   <p className="text-sm font-bold text-slate-700 group-hover:text-[#003C6C] transition-colors">Find an easy GE</p>
-                   <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">That fits my current schedule</p>
-                 </div>
-                 <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-[#FDC700] mt-1" />
-               </button>
+              <div className="space-y-3">
+                <button
+                  onClick={() =>
+                    !isLoading && onSendMessage('What is an easy GE to take that fits in with my schedule?')
+                  }
+                  className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
+                  disabled={isLoading}
+                >
+                  <div className="flex-1">
+                    <div className="text-base font-extrabold text-slate-800">Find an easy GE</div>
+                    <div className="text-sm font-medium text-slate-500 mt-1">
+                      That fits my current schedule
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-slate-300 mt-1" />
+                </button>
 
-               <button
-                 onClick={() => !isLoading && onSendMessage('Build a schedule with no Friday classes')}
-                 className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all group flex items-start gap-3 cursor-pointer"
-                 disabled={isLoading}
-               >
-                 <div className="flex-1">
-                   <p className="text-sm font-bold text-slate-700 group-hover:text-[#003C6C] transition-colors">No Friday classes</p>
-                   <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">Maximize my weekend</p>
-                 </div>
-                 <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-[#FDC700] mt-1" />
-               </button>
+                <button
+                  onClick={() => !isLoading && onSendMessage('Build a schedule with no Friday classes')}
+                  className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
+                  disabled={isLoading}
+                >
+                  <div className="flex-1">
+                    <div className="text-base font-extrabold text-slate-800">No Friday classes</div>
+                    <div className="text-sm font-medium text-slate-500 mt-1">Maximize my weekend</div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-slate-300 mt-1" />
+                </button>
 
-               <button
-                 onClick={() => !isLoading && onSendMessage('What should I take to balance our course workload?')}
-                 className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all group flex items-start gap-3 cursor-pointer"
-                 disabled={isLoading}
-               >
-                 <div className="flex-1">
-                   <p className="text-sm font-bold text-slate-700 group-hover:text-[#003C6C] transition-colors">Balance workload</p>
-                   <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">Mix major reqs with lighter classes</p>
-                 </div>
-                 <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-[#FDC700] mt-1" />
-               </button>
-             </div>
+                <button
+                  onClick={() => !isLoading && onSendMessage('What should I take to balance my course workload?')}
+                  className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
+                  disabled={isLoading}
+                >
+                  <div className="flex-1">
+                    <div className="text-base font-extrabold text-slate-800">Balance workload</div>
+                    <div className="text-sm font-medium text-slate-500 mt-1">
+                      Mix major reqs with lighter classes
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-slate-300 mt-1" />
+                </button>
+              </div>
+
+              <p className="mt-6 text-sm font-semibold text-slate-400 text-center">
+                Tip: mention units, days, and any “no mornings” rules you have.
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="space-y-6 pt-4">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`select-text max-w-[85%] rounded-2xl p-4 text-sm font-medium leading-relaxed shadow-sm ${
-                    msg.role === 'user'
-                      ? 'bg-[#003C6C] text-white rounded-br-sm'
-                      : 'bg-white text-slate-700 border border-slate-200 rounded-bl-sm'
-                  }`}
-                >
-                  {msg.role === 'user' ? (
-                    <p className="whitespace-pre-wrap">{msg.text}</p>
-                  ) : (
-                    <div className="prose prose-sm max-w-none text-slate-700 [&>ul]:list-disc [&>ul]:pl-4 [&>ol]:list-decimal [&>ol]:pl-4 [&_strong]:text-[#003C6C]">
-                      <ReactMarkdown>{msg.text}</ReactMarkdown>
-                    </div>
-                  )}
+          <div className="space-y-5">
+            {messages.map((msg, idx) => {
+              const isUser = msg.role === 'user';
+              return (
+                <div key={idx} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`select-text max-w-[92%] rounded-2xl px-4 py-3 text-sm font-medium leading-relaxed shadow-sm ${
+                      isUser
+                        ? 'bg-[#003C6C] text-white rounded-br-md'
+                        : 'bg-white text-slate-700 border border-slate-200 rounded-bl-md'
+                    }`}
+                  >
+                    {isUser ? (
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                    ) : (
+                      <div className="prose prose-sm max-w-none text-slate-700 [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&_strong]:text-[#003C6C]">
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      <div className="p-4 md:p-5 bg-white border-t border-slate-100 shrink-0">
-        <div className="flex gap-2 relative group">
-          <input
-            type="text"
+      {/* Input */}
+      <div className="bg-white border-t border-slate-100 px-4 md:px-5 py-4 shrink-0">
+        <div className="relative">
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 if (!isLoading) handleSend();
               }
             }}
+            rows={1}
             placeholder={isLoading ? 'Sammy is thinking...' : 'Ask a question...'}
-            className="flex-1 pl-5 pr-12 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-[#003C6C] focus:ring-0 outline-none transition-all text-sm font-bold text-slate-700 placeholder:text-slate-400"
+            className="w-full resize-none pr-14 pl-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-[#003C6C] outline-none transition-all text-sm font-bold text-slate-700 placeholder:text-slate-400"
           />
+
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#FDC700] text-[#003C6C] rounded-xl hover:bg-[#e5b600] transition-all shadow-sm active:scale-95 disabled:opacity-0 disabled:scale-50"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-xl bg-[#FDC700] text-[#003C6C] flex items-center justify-center shadow-sm hover:bg-[#e5b600] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Send message"
           >
-            <Send className="w-4 h-4 font-bold" />
+            <Send className="w-4 h-4" />
           </button>
+        </div>
+
+        <div className="hidden md:block mt-2 text-xs font-semibold text-slate-400">
+          Enter to send, Shift plus Enter for a new line
         </div>
       </div>
     </div>
