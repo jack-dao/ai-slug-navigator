@@ -83,10 +83,10 @@ const Header = ({
                           setSelectedTerm(term);
                           setShowTermDropdown(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 text-[11px] font-bold transition-all ${
+                        className={`w-full text-left px-4 py-2.5 text-[11px] font-bold transition-all cursor-pointer ${
                           selectedTerm === term 
                             ? 'text-[#003C6C] bg-blue-50' 
-                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                         }`}
                       >
                          {term}

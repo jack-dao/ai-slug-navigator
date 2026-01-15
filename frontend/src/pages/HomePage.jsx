@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, AlertCircle, CheckCircle, Search, Filter, BookOpen, MessageSquare, Calendar as CalendarIcon, Info, Loader2 } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, Search, Filter, BookOpen, MessageSquare, Calendar as CalendarIcon, Info, Loader2, RefreshCw } from 'lucide-react';
+import { get, set } from 'idb-keyval';
 
 import Header from '../components/Header'; 
 import FilterSidebar from '../components/FilterSidebar';
@@ -42,9 +43,26 @@ const HomePage = ({ user, session }) => {
 
   const formatTermForDb = (term) => term; 
 
-  const [selectedTerm, setSelectedTerm] = useState(''); 
-  const [availableTerms, setAvailableTerms] = useState([]);
+  // ⚡️ FIX 1: Initialize Term from LocalStorage (Instant, no network wait)
+  const [availableTerms, setAvailableTerms] = useState(() => {
+    try {
+        const saved = localStorage.getItem('cachedTerms');
+        return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const [selectedTerm, setSelectedTerm] = useState(() => {
+      // Priority: 1. LocalStorage 2. First cached term 3. Empty (wait for fetch)
+      return localStorage.getItem('lastSelectedTerm') || (availableTerms.length > 0 ? availableTerms[0] : '');
+  });
+
+  // Save selected term preference instantly
+  useEffect(() => {
+      if (selectedTerm) localStorage.setItem('lastSelectedTerm', selectedTerm);
+  }, [selectedTerm]);
+
   const [isCoursesLoading, setIsCoursesLoading] = useState(true);
+  const [isBackgroundFetching, setIsBackgroundFetching] = useState(false);
 
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem('activeTab') || 'search';
@@ -78,19 +96,8 @@ const HomePage = ({ user, session }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   
-  const [availableCourses, setAvailableCourses] = useState(() => {
-      try {
-          const cached = localStorage.getItem('cachedCourses');
-          return cached ? JSON.parse(cached) : [];
-      } catch { return []; } 
-  });
-
-  const [professorRatings, setProfessorRatings] = useState(() => {
-      try {
-          const cached = localStorage.getItem('cachedRatings');
-          return cached ? JSON.parse(cached) : {};
-      } catch { return {}; } 
-  });
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [professorRatings, setProfessorRatings] = useState({});
 
   const [notification, setNotification] = useState(null);
   const [selectedProfessor, setSelectedProfessor] = useState(null);
@@ -151,6 +158,8 @@ const HomePage = ({ user, session }) => {
   const { selectedCourses, setSelectedCourses, checkForConflicts, totalUnits } = useSchedule(user, session, availableCourses, selectedTerm);
   const MAX_UNITS = 22;
 
+  // ⚡️ FIX 2: Metadata Load (Background Update)
+  // We don't rely on this for the initial render anymore!
   useEffect(() => {
     const fetchMetadata = async () => {
         try {
@@ -165,31 +174,55 @@ const HomePage = ({ user, session }) => {
             if (termsRes.ok) {
                 const dbTerms = await termsRes.json();
                 if (dbTerms.length > 0) {
-                    const sortedTerms = sortTerms(dbTerms);
-                    setAvailableTerms(sortedTerms);
-                    setSelectedTerm(sortedTerms[0]);
-                } else {
-                    const fallback = '2026 Winter Quarter';
-                    setAvailableTerms([fallback]);
-                    setSelectedTerm(fallback);
+                    const sorted = sortTerms(dbTerms);
+                    setAvailableTerms(sorted);
+                    // Cache terms list for next time
+                    localStorage.setItem('cachedTerms', JSON.stringify(sorted));
+                    
+                    // Only auto-select if we have NO selection (First visit ever)
+                    if (!selectedTerm) {
+                        setSelectedTerm(sorted[0]);
+                    }
                 }
             }
         } catch (e) {
             console.error("Metadata Load Error:", e);
-            setSelectedTerm('2026 Winter Quarter');
         }
     };
     fetchMetadata();
-  }, []); 
+  }, []); // Runs once on mount
 
+  // ⚡️ FIX 3: SWR Course Loading (Now runs instantly on mount)
   useEffect(() => {
     const fetchCourses = async () => {
         if (!selectedTerm) return;
-        
-        setIsCoursesLoading(true);
+
+        const dbTerm = formatTermForDb(selectedTerm);
+        const cacheKeyCourses = `courses_${dbTerm}`;
+        const cacheKeyRatings = `ratings`; 
+
+        // 1. FAST: Load from disk
+        try {
+            const cachedCourses = await get(cacheKeyCourses);
+            const cachedRatings = await get(cacheKeyRatings);
+            
+            if (cachedCourses && cachedCourses.length > 0) {
+                setAvailableCourses(cachedCourses);
+                if (cachedRatings) setProfessorRatings(cachedRatings);
+                setIsCoursesLoading(false);
+                setIsBackgroundFetching(true); 
+            } else {
+                // Only blocking loader if we have NO data
+                setIsCoursesLoading(true);
+            }
+        } catch (e) {
+            console.warn("Cache read failed", e);
+            setIsCoursesLoading(true);
+        }
+
+        // 2. SLOW: Network Update
         try {
             const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const dbTerm = formatTermForDb(selectedTerm);
 
             const [cRes, rRes] = await Promise.all([
                 fetch(`${apiBase}/api/courses?term=${encodeURIComponent(dbTerm)}`),
@@ -199,27 +232,18 @@ const HomePage = ({ user, session }) => {
             if (cRes.ok) {
                 const courses = await cRes.json();
                 setAvailableCourses(courses);
-                if (courses.length > 0) {
-                    try { 
-                      localStorage.setItem('cachedCourses', JSON.stringify(courses)); 
-                    } catch (e) {
-                      // ⚡️ FIX: Added console.warn to satisfy linter (Empty block statement)
-                      console.warn('Failed to cache courses', e);
-                    }
-                }
+                set(cacheKeyCourses, courses).catch(err => console.warn('Cache failed', err));
             }
             if (rRes.ok) {
                 const ratings = await rRes.json();
                 setProfessorRatings(ratings);
-                try { 
-                  localStorage.setItem('cachedRatings', JSON.stringify(ratings)); 
-                } catch (e) {
-                  console.warn('Failed to cache ratings', e);
-                }
+                set(cacheKeyRatings, ratings).catch(err => console.warn('Cache failed', err));
             }
-        } catch (e) { console.error("Course Load Error:", e); }
-        finally {
+        } catch (e) { 
+            console.error("Network Load Error:", e); 
+        } finally {
             setIsCoursesLoading(false);
+            setIsBackgroundFetching(false);
         }
     };
 
@@ -413,10 +437,20 @@ const HomePage = ({ user, session }) => {
                             />
                         </div>
                     </div>
-                    <div className="flex items-center justify-between"><span className="font-bold text-sm text-slate-800">{processedCourses.length} Results</span></div>
+                    
+                    {/* ⚡️ UPDATE INDICATOR */}
+                    <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm text-slate-800">{processedCourses.length} Results</span>
+                        {isBackgroundFetching && (
+                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 animate-pulse">
+                                <RefreshCw className="w-3 h-3 animate-spin"/> Updating...
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <main id="search-results-container" className="flex-1 overflow-y-auto custom-scrollbar bg-white relative z-0">
+                    {/* ⚡️ Only show full blocking loader if we have NO data */}
                     {isCoursesLoading ? (
                         <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
                             <Loader2 className="w-10 h-10 animate-spin mb-4 text-[#FDC700]" />
