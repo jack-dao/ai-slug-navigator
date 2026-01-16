@@ -326,7 +326,7 @@ const HomePage = ({ user, session }) => {
     setIsChatLoading(true);
     const newMessages = [...chatMessages, { role: 'user', text }];
     setChatMessages(newMessages);
-    setChatMessages(prev => [...prev, { role: 'assistant', text: "Thinking... 🐌" }]);
+    setChatMessages(prev => [...prev, { role: 'assistant', text: "Sammy is thinking... " }]);
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat`, {
