@@ -3,7 +3,7 @@ const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require("@googl
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash", 
+    model: "gemini-2.5-flash", // NOTE: Ensure this matches the model version you have access to
     safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -33,6 +33,7 @@ const handleChat = async (req, res) => {
       ).join(', ') || 'Staff'}`
     ).join('\n');
 
+    // --- YOUR EXACT PROMPT PRESERVED BELOW ---
     const systemPrompt = `
       You are "Sammy", an academic advisor for UC Santa Cruz.
       
@@ -62,15 +63,30 @@ const handleChat = async (req, res) => {
       ${scheduleString}
     `;
 
-    const result = await model.generateContent(systemPrompt);
-    const response = await result.response;
-    const text = response.text();
+    // 🚀 STREAMING IMPLEMENTATION
+    const result = await model.generateContentStream(systemPrompt);
 
-    res.json({ reply: text });
+    // Set headers to tell the frontend this is a stream
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    // Pipe the chunks directly to the response as they arrive
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      res.write(chunkText);
+    }
+
+    res.end();
 
   } catch (error) {
     console.error("AI Error:", error);
-    res.status(500).json({ reply: "My brain froze! Please try asking again. 🐌" });
+    
+    // Only send JSON error if headers haven't been sent yet
+    if (!res.headersSent) {
+      res.status(500).json({ reply: "My brain froze! Please try asking again. 🐌" });
+    } else {
+      res.end(); // If stream started but failed mid-way, just close it
+    }
   }
 };
 

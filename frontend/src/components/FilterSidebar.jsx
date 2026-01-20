@@ -110,16 +110,10 @@ const FilterSidebar = ({
                             <span>{formatHour(filters.timeRange[1])}</span>
                         </div>
                     </div>
+                    
                 </FilterSection>
 
-                <FilterSection title="Availability">
-                    <label className="flex items-center gap-3 cursor-pointer group p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-[#FDC700] transition-all">
-                        <input type="checkbox" checked={filters.openOnly} onChange={() => setFilters(prev => ({...prev, openOnly: !prev.openOnly}))} className="accent-[#003C6C] cursor-pointer w-4 h-4" />
-                        <span className="text-xs font-bold text-slate-700">Open Classes Only</span>
-                    </label>
-                </FilterSection>
-
-                <FilterSection title="Instructor Rating">
+                                <FilterSection title="Instructor Rating">
                     <div className="px-2 py-2">
                         <input type="range" min="0" max="5" step="0.5" value={filters.minRating} onChange={(e) => setFilters(prev => ({...prev, minRating: parseFloat(e.target.value)}))} className="w-full h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-[#003C6C]" />
                         <div className="flex justify-between mt-3 text-[10px] font-bold text-slate-500">
@@ -128,6 +122,13 @@ const FilterSidebar = ({
                             <span className="opacity-50">5.0</span>
                         </div>
                     </div>
+                </FilterSection>
+
+                <FilterSection title="Availability">
+                    <label className="flex items-center gap-3 cursor-pointer group p-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-[#FDC700] transition-all">
+                        <input type="checkbox" checked={filters.openOnly} onChange={() => setFilters(prev => ({...prev, openOnly: !prev.openOnly}))} className="accent-[#003C6C] cursor-pointer w-4 h-4" />
+                        <span className="text-xs font-bold text-slate-700">Open Classes Only</span>
+                    </label>
                 </FilterSection>
             </div>
         </aside>

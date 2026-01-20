@@ -322,11 +322,17 @@ const HomePage = ({ user, session }) => {
     setIsProfModalOpen(true);
   };
 
+  // 🚀🚀🚀 UPDATED STREAMING LOGIC 🚀🚀🚀
   const handleSendMessage = async (text) => {
     setIsChatLoading(true);
-    const newMessages = [...chatMessages, { role: 'user', text }];
+    
+    // 1. Add "Sammy is thinking..." placeholder immediately
+    const newMessages = [
+        ...chatMessages, 
+        { role: 'user', text }, 
+        { role: 'assistant', text: "Sammy is thinking..." } 
+    ];
     setChatMessages(newMessages);
-    setChatMessages(prev => [...prev, { role: 'assistant', text: "Sammy is thinking... " }]);
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat`, {
@@ -343,14 +349,43 @@ const HomePage = ({ user, session }) => {
           }))
         })
       });
-      const data = await response.json();
-      setChatMessages(prev => [...prev.slice(0, -1), { role: 'assistant', text: data.reply }]);
-    } catch { 
-      setChatMessages(prev => [...prev.slice(0, -1), { role: 'assistant', text: "Sorry, I lost connection to the server. 🧠🚫" }]);
+
+      // 3. Setup the Stream Reader
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let botReply = "";
+
+      // 4. Loop to read chunks as they arrive
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunkText = decoder.decode(value, { stream: true });
+        botReply += chunkText;
+
+        setChatMessages(prev => {
+            const updated = [...prev];
+            const lastMsg = updated[updated.length - 1];
+            if (lastMsg.role === 'assistant') {
+                // Overwrite "Thinking..." with real text immediately
+                lastMsg.text = botReply; 
+            }
+            return updated;
+        });
+      }
+
+    } catch (error) { 
+      console.error("Streaming Error:", error);
+      setChatMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1].text = "Sorry, I lost connection to the server. 🧠🚫";
+          return updated;
+      });
     } finally {
       setIsChatLoading(false);
     }
   };
+  // 🚀🚀🚀 END UPDATES 🚀🚀🚀
 
   const totalPages = Math.ceil(processedCourses.length / ITEMS_PER_PAGE);
   const currentCourses = processedCourses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
