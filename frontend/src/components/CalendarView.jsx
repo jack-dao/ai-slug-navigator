@@ -151,7 +151,7 @@ const CalendarView = ({ selectedCourses }) => {
                             
                             {/* Location - Prefix only for LAB/DISC */}
                             <div className="truncate opacity-75 mt-auto text-[7px] md:text-[9px]">
-                                {type === 'LAB' && <span className="font-bold">DISC: </span>}
+                                {type === 'LAB' && <span>DISC: </span>}
                                 {item.location}
                             </div>
                           </div>
