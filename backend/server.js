@@ -15,7 +15,7 @@ const allowedOrigins = [
 
 app.use(cors());
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 
 const courseRoutes = require('./src/routes/courseRoutes');
 const authRoutes = require('./src/routes/authRoutes');

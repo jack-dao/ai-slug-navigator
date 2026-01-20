@@ -322,7 +322,7 @@ const HomePage = ({ user, session }) => {
     setIsProfModalOpen(true);
   };
 
-  // 🚀🚀🚀 UPDATED STREAMING LOGIC 🚀🚀🚀
+  // 🚀🚀🚀 UPDATED STREAMING LOGIC (NO SNAIL) 🚀🚀🚀
   const handleSendMessage = async (text) => {
     setIsChatLoading(true);
     
@@ -340,7 +340,7 @@ const HomePage = ({ user, session }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          contextCourses: availableCourses,
+          contextCourses: availableCourses, 
           userSchedule: selectedCourses.map(c => ({ 
               code: c.code, 
               name: c.name,
@@ -349,6 +349,10 @@ const HomePage = ({ user, session }) => {
           }))
         })
       });
+
+      if (!response.ok) {
+         throw new Error("Server connection failed"); 
+      }
 
       // 3. Setup the Stream Reader
       const reader = response.body.getReader();
@@ -367,8 +371,7 @@ const HomePage = ({ user, session }) => {
             const updated = [...prev];
             const lastMsg = updated[updated.length - 1];
             if (lastMsg.role === 'assistant') {
-                // Overwrite "Thinking..." with real text immediately
-                lastMsg.text = botReply; 
+                lastMsg.text = botReply;
             }
             return updated;
         });
@@ -378,7 +381,7 @@ const HomePage = ({ user, session }) => {
       console.error("Streaming Error:", error);
       setChatMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1].text = "Sorry, I lost connection to the server. 🧠🚫";
+          updated[updated.length - 1].text = "Sorry, I had trouble connecting to the server. Please try again.";
           return updated;
       });
     } finally {
