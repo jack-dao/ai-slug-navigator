@@ -33,7 +33,6 @@ const handleChat = async (req, res) => {
       ).join(', ') || 'Staff'}`
     ).join('\n');
 
-    // --- YOUR EXACT PROMPT PRESERVED BELOW ---
     const systemPrompt = `
       You are "Sammy", an academic advisor for UC Santa Cruz.
       
@@ -63,14 +62,11 @@ const handleChat = async (req, res) => {
       ${scheduleString}
     `;
 
-    // 🚀 STREAMING IMPLEMENTATION
     const result = await model.generateContentStream(systemPrompt);
 
-    // Set headers to tell the frontend this is a stream
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Transfer-Encoding', 'chunked');
 
-    // Pipe the chunks directly to the response as they arrive
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
       res.write(chunkText);
@@ -81,11 +77,10 @@ const handleChat = async (req, res) => {
   } catch (error) {
     console.error("AI Error:", error);
     
-    // Only send JSON error if headers haven't been sent yet
     if (!res.headersSent) {
       res.status(500).json({ reply: "My brain froze! Please try asking again. 🐌" });
     } else {
-      res.end(); // If stream started but failed mid-way, just close it
+      res.end(); 
     }
   }
 };
