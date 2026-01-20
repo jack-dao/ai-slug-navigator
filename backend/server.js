@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression'); 
 require('dotenv').config();
 
 const app = express();
@@ -13,8 +14,8 @@ const allowedOrigins = [
   'https://ai-slug-navigator.onrender.com'          
 ];
 
+app.use(compression());
 app.use(cors());
-
 app.use(express.json({ limit: '50mb' }));
 
 const courseRoutes = require('./src/routes/courseRoutes');
