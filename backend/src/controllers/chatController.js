@@ -78,7 +78,7 @@ const handleChat = async (req, res) => {
     console.error("AI Error:", error);
     
     if (!res.headersSent) {
-      res.status(500).json({ reply: "My brain froze! Please try asking again. 🐌" });
+      res.status(500).json({ reply: "My brain froze! Please try asking again." });
     } else {
       res.end(); 
     }

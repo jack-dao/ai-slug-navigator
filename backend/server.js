@@ -14,7 +14,15 @@ const allowedOrigins = [
   'https://ai-slug-navigator.onrender.com'          
 ];
 
-app.use(compression());
+app.use(compression({
+  filter: (req, res) => {
+    if (req.path.includes('/api/chat')) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
