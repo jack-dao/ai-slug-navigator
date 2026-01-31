@@ -161,7 +161,9 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
   };
 
   return (
-    <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 overflow-hidden group/card w-full">
+    // 🛑 ADDED "min-w-[320px]" HERE
+    // This stops the entire card from shrinking below 320px, preventing the content inside from being crushed.
+    <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 overflow-hidden group/card w-full min-w-[400px]">
       <div className="px-6 py-5 bg-white rounded-t-[20px] border-t border-l border-r border-slate-200 border-b border-b-slate-100">
         <div className="flex justify-between items-start mb-3 flex-wrap gap-4">
             <div>
@@ -192,9 +194,9 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                   </div>
                   
                   {descriptionText ? (
-                      <span className="text-slate-700 font-medium animate-in fade-in">
+                      <div className="text-slate-700 font-medium animate-in fade-in flex-1 min-w-0 break-words">
                           {descriptionText}
-                      </span>
+                      </div>
                   ) : (
                       <button 
                         onClick={handleToggleDescription}
@@ -213,9 +215,9 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                               <Lock className="w-3.5 h-3.5" />
                               <span>Prerequisites:</span>
                           </div>
-                          <span className="text-slate-700 font-medium">
+                          <div className="text-slate-700 font-medium flex-1 min-w-0 break-words">
                               {prerequisites.replace(/^Prerequisite\(s\):/i, '').trim()}
-                          </span>
+                          </div>
                       </div>
                   </div>
               )}
@@ -242,10 +244,9 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                 <div key={section.id} className={`p-6 hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
                 <div className="flex flex-wrap gap-6">
                     
-                    {/* 🛑 FIX: Use 2xl:flex-row. Stays vertical on most screens. */}
-                    <div className="flex-[10_1_380px] flex flex-col 2xl:flex-row gap-4 2xl:gap-6 min-w-0">
+                    <div className="flex-[1_1_300px] flex flex-col gap-4 min-w-0">
                         {/* Instructor Block */}
-                        <div className="w-full 2xl:w-[180px] shrink-0">
+                        <div className="w-full shrink-0">
                             <p className="text-[10px] font-bold text-[#003C6C] mb-1">Instructor</p>
                             <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-start gap-2 group/prof text-left cursor-pointer w-full">
                                 <div className="w-10 h-10 rounded-full bg-[#003C6C]/5 flex items-center justify-center text-[#003C6C] shrink-0">
@@ -270,7 +271,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                         </div>
 
                         {/* Grid Data */}
-                        <div className="flex-1 grid grid-cols-2 gap-y-3 gap-x-4 min-w-0">
+                        <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                             <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Class Number</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
@@ -302,7 +303,8 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                         </div>
                     </div>
 
-                    <div className="flex-[1_1_220px] flex flex-col justify-center 2xl:border-l border-slate-100 2xl:pl-6 border-dashed min-w-[200px] border-t 2xl:border-t-0 pt-4 2xl:pt-0">
+                    {/* Time & Location Block */}
+                    <div className="flex-[1_1_250px] flex flex-col justify-center min-w-0 pt-4 border-t border-dashed border-slate-200 md:border-t-0 md:pt-0 md:border-l md:pl-6">
                         <div className="flex items-start gap-4 mb-4">
                             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
                                 <Clock className="w-5 h-5" />
@@ -310,7 +312,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                             <div className="min-w-0 flex-1">
                                 <p className="font-bold text-slate-900 text-sm truncate">{expandDays(section.days)}</p>
                                 <p className="text-xs font-bold text-slate-900 mt-0.5 truncate">{formatTime(section.startTime)} - {formatTime(section.endTime)}</p>
-                                <div className="flex items-center gap-1.5 mt-1.5 text-xs font-bold text-slate-600">
+                                <div className="flex items-center gap-1.5 mt-1.5 text-xs font-bold text-slate-600 min-w-0">
                                     <MapPin className="w-3 h-3 shrink-0" />
                                     <span className="leading-tight truncate">{formatLocation(section.location)}</span>
                                 </div>
@@ -337,7 +339,8 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                         </div>
                     </div>
 
-                    <div className="flex-[1_1_220px] flex flex-col gap-2 justify-center min-w-[220px]">
+                    {/* Action Block */}
+                    <div className="flex-[1_1_250px] flex flex-col gap-2 justify-center min-w-0 2xl:border-l 2xl:pl-6 border-slate-200 border-dashed">
                         {hasDiscussions && (
                             <div className={`relative ${openDropdownId === section.id ? 'z-50' : 'z-0'}`} ref={openDropdownId === section.id ? dropdownRef : null}>
                                 <button 
@@ -370,9 +373,9 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                                                             : 'hover:bg-slate-50 text-slate-600'
                                                     }`}
                                                 >
-                                                    <div className="flex-1">
-                                                        <span className="font-black text-slate-800 block">{expandDays(sub.days)}</span>
-                                                        <span className="text-[10px] font-bold text-black block mt-0.5">
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="font-black text-slate-800 block truncate">{expandDays(sub.days)}</span>
+                                                        <span className="text-[10px] font-bold text-black block mt-0.5 truncate">
                                                             {formatTime(sub.startTime)} - {formatTime(sub.endTime)} | {formatLocation(sub.location)}
                                                         </span>
                                                     </div>
