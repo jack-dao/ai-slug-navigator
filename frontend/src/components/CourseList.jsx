@@ -7,26 +7,14 @@ const CourseList = ({
   setSearchQuery, 
   processedCourses, 
   onAdd,
+  filters,
   professorRatings,
   onShowProfessor,
-  sortOption,
-  filters
+  sortOption
 }) => {
   return (
     <div className="p-6">
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search by course name, code, or instructor..."
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
+      {/* 🗑️ REMOVED DUPLICATE SEARCH BAR HERE */}
 
       <div className="space-y-4">
         {processedCourses.length === 0 ? (
@@ -57,15 +45,16 @@ const CourseList = ({
             )}
           </div>
         ) : (
+          // --- RESULTS LIST ---
           processedCourses.map(course => (
             <CourseCard 
               key={course.id}
               course={course}
               onAdd={onAdd}
+              filters={filters}
               professorRatings={professorRatings}
               onShowProfessor={onShowProfessor}
               sortOption={sortOption}
-              filters={filters}
             />
           ))
         )}

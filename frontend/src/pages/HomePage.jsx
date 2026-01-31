@@ -449,11 +449,11 @@ const HomePage = ({ user, session }) => {
                         </button>
 
                         <div className="relative flex-1 group min-w-0">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003C6C] w-5 h-5 transition-colors" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#003C6C] w-5 h-5 transition-colors" />
                             <input 
                                 type="text" 
-                                placeholder="Search courses..." 
-                                className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-[#003C6C] outline-none text-sm font-bold shadow-inner text-slate-700 placeholder:text-slate-400" 
+                                placeholder="Search by course name, code, or instructor..."
+                                className="w-full pl-12 pr-4 py-3 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm bg-white" 
                                 value={searchQuery} 
                                 onChange={(e) => setSearchQuery(e.target.value)} 
                             />
@@ -491,13 +491,12 @@ const HomePage = ({ user, session }) => {
                                 <CourseList 
                                     searchQuery={searchQuery}
                                     setSearchQuery={setSearchQuery}
-                                    processedCourses={currentCourses}
+                                    processedCourses={currentCourses} 
                                     onAdd={addCourse}
-                                    // 🛑 FIX IS HERE: Passing down the data needed for filtering
+                                    filters={filters}
                                     professorRatings={professorRatings}
                                     onShowProfessor={viewProfessorDetails}
                                     sortOption={filters.sort}
-                                    filters={filters}
                                 />
                             </div>
                             {processedCourses.length > ITEMS_PER_PAGE && (
