@@ -18,6 +18,8 @@ import CourseList from '../components/CourseList';
 import { useCourseFilters } from '../hooks/useCourseFilters';
 import { useSchedule } from '../hooks/useSchedule';
 
+const formatTermForDb = (term) => term; 
+
 const HomePage = ({ user, session }) => {
   const [ucscSchool, setUcscSchool] = useState({ 
     id: 'ucsc', 
@@ -41,8 +43,6 @@ const HomePage = ({ user, session }) => {
       return (seasons[seasonB] || 0) - (seasons[seasonA] || 0);
     });
   };
-
-  const formatTermForDb = (term) => term; 
 
   const [availableTerms, setAvailableTerms] = useState(() => {
     try {
@@ -246,7 +246,7 @@ const HomePage = ({ user, session }) => {
     return () => {
         isActive = false;
     };
-  }, [selectedTerm]);
+  }, [selectedTerm]); // 🛑 Dependency array is now clean because formatTermForDb is outside component
 
   const showNotification = (message, type = 'success') => {
     setNotification(null);
@@ -459,7 +459,7 @@ const HomePage = ({ user, session }) => {
                             />
                         </div>
                         
-                        <div className="relative w-64 hidden md:block">
+                        <div className="relative w-64 hidden md:block shrink-0">
                             <CustomDropdown 
                                 prefix="Sort by: "
                                 value={filters.sort}

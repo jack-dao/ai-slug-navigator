@@ -4,7 +4,6 @@ import CourseCard from './CourseCard';
 
 const CourseList = ({ 
   searchQuery, 
-  setSearchQuery, 
   processedCourses, 
   onAdd,
   filters,
@@ -14,14 +13,10 @@ const CourseList = ({
 }) => {
   return (
     <div className="p-6">
-      {/* 🗑️ REMOVED DUPLICATE SEARCH BAR HERE */}
-
       <div className="space-y-4">
         {processedCourses.length === 0 ? (
-          // --- EMPTY STATES ---
           <div className="text-center py-12">
             {searchQuery ? (
-              // CASE 1: User typed something, but found nothing
               <>
                 <div className="bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                    <Search className="w-8 h-8 text-gray-400" />
@@ -32,7 +27,6 @@ const CourseList = ({
                 </p>
               </>
             ) : (
-              // CASE 2: Search is empty (Initial State or Empty DB)
               <>
                 <div className="bg-blue-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                    <BookOpen className="w-8 h-8 text-blue-500" />
@@ -45,7 +39,6 @@ const CourseList = ({
             )}
           </div>
         ) : (
-          // --- RESULTS LIST ---
           processedCourses.map(course => (
             <CourseCard 
               key={course.id}
