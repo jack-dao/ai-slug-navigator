@@ -5,7 +5,6 @@ import { get, set } from 'idb-keyval';
 import Header from '../components/Header'; 
 import FilterSidebar from '../components/FilterSidebar';
 import CustomDropdown from '../components/CustomDropdown';
-import CourseCard from '../components/CourseCard';
 import ChatSidebar from '../components/ChatSidebar';
 import AuthModal from '../components/AuthModal';
 import CalendarView from '../components/CalendarView';
