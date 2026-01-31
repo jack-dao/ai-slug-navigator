@@ -93,7 +93,6 @@ const ChatSidebar = ({ messages = [], onSendMessage, isLoading, schoolName }) =>
 
                   <button
                     onClick={() => !isLoading && onSendMessage('What should I take to balance my course workload?')}
-                    // 🛑 FIX: Added cursor-pointer explicitly
                     className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3 cursor-pointer"
                     disabled={isLoading}
                   >
