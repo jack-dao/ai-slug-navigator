@@ -13,6 +13,7 @@ import ScheduleList from '../components/ScheduleList';
 import ProfessorModal from '../components/ProfessorModal';
 import PrivacyModal from '../components/PrivacyModal'; 
 import AboutTab from '../components/AboutTab';
+import CourseList from '../components/CourseList';
 
 import { useCourseFilters } from '../hooks/useCourseFilters';
 import { useSchedule } from '../hooks/useSchedule';
@@ -322,11 +323,9 @@ const HomePage = ({ user, session }) => {
     setIsProfModalOpen(true);
   };
 
-  // 🚀🚀🚀 UPDATED STREAMING LOGIC (NO SNAIL) 🚀🚀🚀
   const handleSendMessage = async (text) => {
     setIsChatLoading(true);
     
-    // 1. Add "Sammy is thinking..." placeholder immediately
     const newMessages = [
         ...chatMessages, 
         { role: 'user', text }, 
@@ -354,12 +353,10 @@ const HomePage = ({ user, session }) => {
          throw new Error("Server connection failed"); 
       }
 
-      // 3. Setup the Stream Reader
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let botReply = "";
 
-      // 4. Loop to read chunks as they arrive
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -388,7 +385,6 @@ const HomePage = ({ user, session }) => {
       setIsChatLoading(false);
     }
   };
-  // 🚀🚀🚀 END UPDATES 🚀🚀🚀
 
   const totalPages = Math.ceil(processedCourses.length / ITEMS_PER_PAGE);
   const currentCourses = processedCourses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -473,7 +469,6 @@ const HomePage = ({ user, session }) => {
                         </div>
                     </div>
                     
-                    {/* ⚡️ UPDATE INDICATOR */}
                     <div className="flex items-center justify-between">
                         <span className="font-bold text-sm text-slate-800">{processedCourses.length} Results</span>
                         {isBackgroundFetching && (
@@ -485,7 +480,6 @@ const HomePage = ({ user, session }) => {
                 </div>
 
                 <main id="search-results-container" className="flex-1 overflow-y-auto custom-scrollbar bg-white relative z-0">
-                    {/* ⚡️ Only show full blocking loader if we have NO data */}
                     {isCoursesLoading ? (
                         <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
                             <Loader2 className="w-10 h-10 animate-spin mb-4 text-[#FDC700]" />
@@ -494,23 +488,17 @@ const HomePage = ({ user, session }) => {
                     ) : (
                         <>
                             <div className="p-4 md:p-8 grid grid-cols-1 gap-6">
-                                {currentCourses.length > 0 ? (
-                                    currentCourses.map(course => (
-                                        <CourseCard 
-                                            key={course.id} 
-                                            course={course} 
-                                            professorRatings={professorRatings} 
-                                            onAdd={addCourse} 
-                                            onShowProfessor={viewProfessorDetails} 
-                                            sortOption={filters.sort} 
-                                        />
-                                    ))
-                                ) : (
-                                    <div className="col-span-1 flex flex-col items-center justify-center py-20 text-slate-400">
-                                        <BookOpen className="w-12 h-12 mb-4 opacity-20" />
-                                        <p className="font-bold">No courses found for {selectedTerm}</p>
-                                    </div>
-                                )}
+                                <CourseList 
+                                    searchQuery={searchQuery}
+                                    setSearchQuery={setSearchQuery}
+                                    processedCourses={currentCourses}
+                                    onAdd={addCourse}
+                                    // 🛑 FIX IS HERE: Passing down the data needed for filtering
+                                    professorRatings={professorRatings}
+                                    onShowProfessor={viewProfessorDetails}
+                                    sortOption={filters.sort}
+                                    filters={filters}
+                                />
                             </div>
                             {processedCourses.length > ITEMS_PER_PAGE && (
                                 <div className="flex justify-between items-center mt-12 mb-8 px-4 md:px-8 border-t border-slate-200 pt-8">

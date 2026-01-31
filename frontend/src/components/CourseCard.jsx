@@ -1,13 +1,35 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Clock, Plus, Star, MapPin, ChevronDown, RotateCcw, User, Hash, Lock, BookOpen, GraduationCap, Monitor, AlertCircle, Hourglass } from 'lucide-react';
+import { Clock, Plus, Star, MapPin, ChevronDown, RotateCcw, User, Hash, Lock, BookOpen, GraduationCap, Monitor, AlertCircle, Loader2 } from 'lucide-react';
 
-const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOption }) => {
+const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOption, filters }) => {
   const [selectedSubSections, setSelectedSubSections] = useState({});
   const [errors, setErrors] = useState({});
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const dropdownRef = useRef(null);
 
-  const { geCode, prerequisites, career, grading, description } = course;
+  const [descriptionText, setDescriptionText] = useState(course.description || null);
+  const [isLoadingDesc, setIsLoadingDesc] = useState(false);
+
+  const { geCode, prerequisites, career, grading } = course;
+
+  const handleToggleDescription = async () => {
+    if (descriptionText) return;
+
+    setIsLoadingDesc(true);
+    try {
+        const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const res = await fetch(`${apiBase}/api/courses/${course.id}/description`);
+        if (res.ok) {
+            const data = await res.json();
+            setDescriptionText(data.description || "No description available.");
+        }
+    } catch (e) {
+        console.error("Failed to load description", e);
+        setDescriptionText("Failed to load description.");
+    } finally {
+        setIsLoadingDesc(false);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -19,8 +41,48 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const parseTime = (timeStr) => {
+    if (!timeStr) return null;
+    const match = timeStr.match(/(\d+):(\d+)(AM|PM)/);
+    if (!match) return null;
+    let [_, h, m, period] = match;
+    h = parseInt(h);
+    if (period === 'PM' && h !== 12) h += 12;
+    if (period === 'AM' && h === 12) h = 0;
+    return h + (parseInt(m) / 60);
+  };
+
   const sortedSections = useMemo(() => {
     let sections = [...(course.sections || [])];
+
+    if (filters) {
+        if (filters.minRating > 0) {
+            sections = sections.filter(s => {
+                const stats = professorRatings?.[s.instructor];
+                return stats && stats.avgRating >= filters.minRating;
+            });
+        }
+        
+        if (filters.openOnly) {
+            sections = sections.filter(s => s.status !== 'Closed' && s.status !== 'Wait List');
+        }
+
+        if (filters.days && filters.days.length > 0) {
+            sections = sections.filter(s => {
+                const sDays = s.days || "";
+                return filters.days.some(day => sDays.includes(day));
+            });
+        }
+
+        if (filters.timeRange && (filters.timeRange[0] > 7 || filters.timeRange[1] < 23)) {
+             sections = sections.filter(s => {
+                const start = parseTime(s.startTime);
+                const end = parseTime(s.endTime);
+                if (start === null || end === null) return false;
+                return start >= filters.timeRange[0] && end <= filters.timeRange[1];
+             });
+        }
+    }
 
     if (sortOption === 'Rating') {
         sections.sort((a, b) => {
@@ -36,7 +98,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
         });
     }
     return sections;
-  }, [course.sections, professorRatings, sortOption]);
+  }, [course.sections, professorRatings, sortOption, filters]);
 
   const formatTime = (time) => time ? time.replace(/^0/, '') : '';
   const formatInstructor = (name) => name ? name.replace(/,/g, ', ') : 'Staff';
@@ -142,22 +204,31 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
             )}
         </div>
         
-        {(description || prerequisites) && (
-          <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm space-y-3">
-              {description && (
-                  <div className="flex gap-2 items-start">
-                      <div className="flex items-center gap-1.5 font-bold text-[#003C6C] whitespace-nowrap shrink-0">
-                          <BookOpen className="w-3.5 h-3.5" />
-                          <span>Description:</span>
-                      </div>
-                      <span className="text-slate-700 font-medium">
-                          {description}
-                      </span>
+        {/* Lazy Loading Description */}
+        <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm space-y-3">
+             <div className="flex gap-2 items-start">
+                  <div className="flex items-center gap-1.5 font-bold text-[#003C6C] whitespace-nowrap shrink-0 mt-0.5">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>Description:</span>
                   </div>
-              )}
+                  
+                  {descriptionText ? (
+                      <span className="text-slate-700 font-medium animate-in fade-in">
+                          {descriptionText}
+                      </span>
+                  ) : (
+                      <button 
+                        onClick={handleToggleDescription}
+                        disabled={isLoadingDesc}
+                        className="text-xs font-bold text-[#003C6C] underline decoration-dashed underline-offset-4 hover:text-blue-600 flex items-center gap-2"
+                      >
+                        {isLoadingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : "Show Description"}
+                      </button>
+                  )}
+              </div>
 
               {prerequisites && (
-                  <div className={`${description ? 'pt-3 border-t border-slate-200' : ''}`}>
+                  <div className="pt-3 border-t border-slate-200">
                       <div className="flex gap-2 items-start">
                           <div className="flex items-center gap-1.5 font-bold text-[#003C6C] whitespace-nowrap shrink-0">
                               <Lock className="w-3.5 h-3.5" />
@@ -169,208 +240,213 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                       </div>
                   </div>
               )}
-          </div>
-        )}
+        </div>
       </div>
 
       <div className="divide-y divide-slate-200 border-l border-r border-b border-slate-200 rounded-b-[20px]">
-        {sortedSections.map((section, index) => {
-          const hasDiscussions = section.subSections?.length > 0;
-          const ratingData = professorRatings?.[section.instructor];
-          const selectedSubId = selectedSubSections[section.id];
-          const selectedSub = section.subSections?.find(s => s.id === selectedSubId);
-          const hasError = errors[section.id];
+        {/* Only Render Filtered Sections */}
+        {sortedSections.length > 0 ? (
+            sortedSections.map((section, index) => {
+            const hasDiscussions = section.subSections?.length > 0;
+            const ratingData = professorRatings?.[section.instructor];
+            const selectedSubId = selectedSubSections[section.id];
+            const selectedSub = section.subSections?.find(s => s.id === selectedSubId);
+            const hasError = errors[section.id];
 
-          const capacity = section.capacity || 1;
-          const enrolled = section.enrolled || 0;
-          const fillPercentage = Math.min((enrolled / capacity) * 100, 100);
-          const isClosed = section.status === 'Closed';
-          const isWaitlist = section.status?.includes('Wait');
-          const isLast = index === sortedSections.length - 1;
+            const capacity = section.capacity || 1;
+            const enrolled = section.enrolled || 0;
+            const fillPercentage = Math.min((enrolled / capacity) * 100, 100);
+            const isClosed = section.status === 'Closed';
+            const isWaitlist = section.status?.includes('Wait');
+            const isLast = index === sortedSections.length - 1;
 
-          return (
-            <div key={section.id} className={`p-6 hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
-              <div className="flex flex-wrap gap-6">
-                
-                {/* ⚡️ FIX: Changed from flex-row to flex-col on mobile so info doesn't hang off */}
-                <div className="flex-[10_1_380px] flex flex-col md:flex-row gap-4 md:gap-6">
-                    {/* Instructor Block: Full width on mobile, fixed width on desktop */}
-                    <div className="w-full md:w-[180px] shrink-0">
-                        <p className="text-[10px] font-bold text-[#003C6C] mb-1">Instructor</p>
-                        <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-start gap-2 group/prof text-left cursor-pointer w-full">
-                            <div className="w-10 h-10 rounded-full bg-[#003C6C]/5 flex items-center justify-center text-[#003C6C] shrink-0">
-                                <User className="w-5 h-5" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <span className="block font-bold text-slate-900 group-hover/prof:text-[#003C6C] group-hover/prof:underline decoration-2 underline-offset-2 transition-colors leading-tight">
-                                    {formatInstructor(section.instructor)}
-                                </span>
-                                {ratingData ? (
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        <div className="flex">{renderStars(ratingData.avgRating)}</div>
-                                        <span className="text-xs font-bold text-slate-500 whitespace-nowrap">
-                                            {ratingData.avgRating} ({ratingData.numRatings})
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <span className="text-xs font-medium text-slate-400">No ratings</span>
-                                )}
-                            </div>
-                        </button>
-                    </div>
-
-                    <div className="flex-1 grid grid-cols-2 gap-y-3 gap-x-4 min-w-[200px]">
-                        <div>
-                            <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Class Number</p>
-                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
-                                <Hash className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                <span>{section.classNumber || '---'}</span>
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Instruction</p>
-                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
-                                <Monitor className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                <span>{section.instructionMode || 'In Person'}</span>
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Career</p>
-                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
-                                <GraduationCap className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                <span>{formatMetaValue('Career', career || 'Undergraduate')}</span>
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Grading</p>
-                            <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
-                                <BookOpen className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                <span>{formatMetaValue('Grading', grading ? 'Student Option' : 'Letter')}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex-[1_1_220px] flex flex-col justify-center md:border-l border-slate-100 md:pl-6 border-dashed min-w-[200px] border-t md:border-t-0 pt-4 md:pt-0">
-                    <div className="flex items-start gap-4 mb-4">
-                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
-                            <Clock className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="font-bold text-slate-900 text-sm">{expandDays(section.days)}</p>
-                            <p className="text-xs font-bold text-slate-900 mt-0.5">{formatTime(section.startTime)} - {formatTime(section.endTime)}</p>
-                            <div className="flex items-center gap-1.5 mt-1.5 text-xs font-bold text-slate-600">
-                                <MapPin className="w-3 h-3 shrink-0" />
-                                <span className="leading-tight">{formatLocation(section.location)}</span>
-                            </div>
-                        </div>
-                    </div>
+            return (
+                <div key={section.id} className={`p-6 hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
+                <div className="flex flex-wrap gap-6">
                     
-                    <div className="space-y-1.5 w-full">
-                        <div className="flex justify-between items-end">
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${isClosed ? 'text-rose-600' : isWaitlist ? 'text-orange-600' : 'text-[#003C6C]'}`}>
-                                {section.status || 'Open'}
-                            </span>
-                            <div className="flex items-baseline gap-1 text-right leading-none">
-                                <span className="text-xs font-black text-slate-700">{enrolled}/{capacity}</span>
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Enrolled</span>
+                    <div className="flex-[10_1_380px] flex flex-col md:flex-row gap-4 md:gap-6">
+                        <div className="w-full md:w-[180px] shrink-0">
+                            <p className="text-[10px] font-bold text-[#003C6C] mb-1">Instructor</p>
+                            <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-start gap-2 group/prof text-left cursor-pointer w-full">
+                                <div className="w-10 h-10 rounded-full bg-[#003C6C]/5 flex items-center justify-center text-[#003C6C] shrink-0">
+                                    <User className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <span className="block font-bold text-slate-900 group-hover/prof:text-[#003C6C] group-hover/prof:underline decoration-2 underline-offset-2 transition-colors leading-tight">
+                                        {formatInstructor(section.instructor)}
+                                    </span>
+                                    {ratingData ? (
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <div className="flex">{renderStars(ratingData.avgRating)}</div>
+                                            <span className="text-xs font-bold text-slate-500 whitespace-nowrap">
+                                                {ratingData.avgRating} ({ratingData.numRatings})
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs font-medium text-slate-400">No ratings</span>
+                                    )}
+                                </div>
+                            </button>
+                        </div>
+
+                        <div className="flex-1 grid grid-cols-2 gap-y-3 gap-x-4 min-w-[200px]">
+                            <div>
+                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Class Number</p>
+                                <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
+                                    <Hash className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
+                                    <span>{section.classNumber || '---'}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Instruction</p>
+                                <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
+                                    <Monitor className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
+                                    <span>{section.instructionMode || 'In Person'}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Career</p>
+                                <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
+                                    <GraduationCap className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
+                                    <span>{formatMetaValue('Career', career || 'Undergraduate')}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Grading</p>
+                                <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
+                                    <BookOpen className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
+                                    <span>{formatMetaValue('Grading', grading ? 'Student Option' : 'Letter')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-[1_1_220px] flex flex-col justify-center md:border-l border-slate-100 md:pl-6 border-dashed min-w-[200px] border-t md:border-t-0 pt-4 md:pt-0">
+                        <div className="flex items-start gap-4 mb-4">
+                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+                                <Clock className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-slate-900 text-sm">{expandDays(section.days)}</p>
+                                <p className="text-xs font-bold text-slate-900 mt-0.5">{formatTime(section.startTime)} - {formatTime(section.endTime)}</p>
+                                <div className="flex items-center gap-1.5 mt-1.5 text-xs font-bold text-slate-600">
+                                    <MapPin className="w-3 h-3 shrink-0" />
+                                    <span className="leading-tight">{formatLocation(section.location)}</span>
+                                </div>
                             </div>
                         </div>
                         
-                        <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                            <div 
-                                className={`h-full ${isClosed ? 'bg-rose-500' : isWaitlist ? 'bg-orange-500' : 'bg-emerald-500'}`} 
-                                style={{ width: `${fillPercentage}%` }} 
-                            />
+                        <div className="space-y-1.5 w-full">
+                            <div className="flex justify-between items-end">
+                                <span className={`text-[10px] font-bold uppercase tracking-wider ${isClosed ? 'text-rose-600' : isWaitlist ? 'text-orange-600' : 'text-[#003C6C]'}`}>
+                                    {section.status || 'Open'}
+                                </span>
+                                <div className="flex items-baseline gap-1 text-right leading-none">
+                                    <span className="text-xs font-black text-slate-700">{enrolled}/{capacity}</span>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Enrolled</span>
+                                </div>
+                            </div>
+                            
+                            <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                                <div 
+                                    className={`h-full ${isClosed ? 'bg-rose-500' : isWaitlist ? 'bg-orange-500' : 'bg-emerald-500'}`} 
+                                    style={{ width: `${fillPercentage}%` }} 
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex-[1_1_220px] flex flex-col gap-2 justify-center min-w-[220px]">
-                    {hasDiscussions && (
-                        <div className={`relative ${openDropdownId === section.id ? 'z-50' : 'z-0'}`} ref={openDropdownId === section.id ? dropdownRef : null}>
-                            <button 
-                                onClick={() => toggleDropdown(section.id)} 
-                                className={`w-full flex items-center justify-between text-xs font-bold border rounded-xl px-3 py-4 transition-all cursor-pointer ${
-                                    hasError ? 'border-rose-300 bg-rose-50 text-rose-600' : 'bg-white border-slate-200 text-slate-600 hover:border-[#003C6C] hover:text-[#003C6C]'
-                                }`}
-                            >
-                                <span className="truncate">
-                                    {selectedSub ? `${expandDays(selectedSub.days)} ${formatTime(selectedSub.startTime)} - ${formatTime(selectedSub.endTime)}` : "Select Discussion"}
-                                </span>
-                                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdownId === section.id ? 'rotate-180' : ''}`} />
-                            </button>
-                            
-                            {openDropdownId === section.id && (
-                                <div className="absolute top-full mt-2 left-0 w-full bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden">
-                                    <div className="max-h-96 overflow-y-auto custom-scrollbar p-1">
-                                        {selectedSubId && (
-                                            <button onClick={() => handleSelectDiscussion(section.id, null)} className="w-full text-left px-3 py-2.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-lg mb-1 flex items-center gap-2 cursor-pointer">
-                                                <RotateCcw className="w-3 h-3" /> Clear Selection
-                                            </button>
-                                        )}
-                                        {section.subSections.map((sub) => (
-                                            <button 
-                                                key={sub.id} 
-                                                onClick={() => handleSelectDiscussion(section.id, sub.id)} 
-                                                className={`w-full text-left px-3 py-3 text-xs mb-0.5 flex items-center gap-3 border-b border-slate-50 last:border-0 rounded-lg group transition-colors cursor-pointer ${
-                                                    selectedSubId === sub.id 
-                                                        ? 'bg-blue-50 text-[#003C6C]' 
-                                                        : 'hover:bg-slate-50 text-slate-600'
-                                                }`}
-                                            >
-                                                <div className="flex-1">
-                                                    <span className="font-black text-slate-800 block">{expandDays(sub.days)}</span>
-                                                    <span className="text-[10px] font-bold text-black block mt-0.5">
-                                                        {formatTime(sub.startTime)} - {formatTime(sub.endTime)} | {formatLocation(sub.location)}
-                                                    </span>
-                                                </div>
-                                                <div className="text-right shrink-0">
-                                                    <span className="text-[10px] font-black text-slate-900 block">{sub.enrolled}/{sub.capacity}</span>
-                                                    <span className="uppercase text-slate-400 font-bold tracking-wider text-[9px] block">
-                                                        {sub.enrolled >= sub.capacity ? 'Full' : 'Open'}
-                                                    </span>
-                                                </div>
-                                            </button>
-                                        ))}
+                    <div className="flex-[1_1_220px] flex flex-col gap-2 justify-center min-w-[220px]">
+                        {hasDiscussions && (
+                            <div className={`relative ${openDropdownId === section.id ? 'z-50' : 'z-0'}`} ref={openDropdownId === section.id ? dropdownRef : null}>
+                                <button 
+                                    onClick={() => toggleDropdown(section.id)} 
+                                    className={`w-full flex items-center justify-between text-xs font-bold border rounded-xl px-3 py-4 transition-all cursor-pointer ${
+                                        hasError ? 'border-rose-300 bg-rose-50 text-rose-600' : 'bg-white border-slate-200 text-slate-600 hover:border-[#003C6C] hover:text-[#003C6C]'
+                                    }`}
+                                >
+                                    <span className="truncate">
+                                        {selectedSub ? `${expandDays(selectedSub.days)} ${formatTime(selectedSub.startTime)} - ${formatTime(selectedSub.endTime)}` : "Select Discussion"}
+                                    </span>
+                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdownId === section.id ? 'rotate-180' : ''}`} />
+                                </button>
+                                
+                                {openDropdownId === section.id && (
+                                    <div className="absolute top-full mt-2 left-0 w-full bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden">
+                                        <div className="max-h-96 overflow-y-auto custom-scrollbar p-1">
+                                            {selectedSubId && (
+                                                <button onClick={() => handleSelectDiscussion(section.id, null)} className="w-full text-left px-3 py-2.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-lg mb-1 flex items-center gap-2 cursor-pointer">
+                                                    <RotateCcw className="w-3 h-3" /> Clear Selection
+                                                </button>
+                                            )}
+                                            {section.subSections.map((sub) => (
+                                                <button 
+                                                    key={sub.id} 
+                                                    onClick={() => handleSelectDiscussion(section.id, sub.id)} 
+                                                    className={`w-full text-left px-3 py-3 text-xs mb-0.5 flex items-center gap-3 border-b border-slate-50 last:border-0 rounded-lg group transition-colors cursor-pointer ${
+                                                        selectedSubId === sub.id 
+                                                            ? 'bg-blue-50 text-[#003C6C]' 
+                                                            : 'hover:bg-slate-50 text-slate-600'
+                                                    }`}
+                                                >
+                                                    <div className="flex-1">
+                                                        <span className="font-black text-slate-800 block">{expandDays(sub.days)}</span>
+                                                        <span className="text-[10px] font-bold text-black block mt-0.5">
+                                                            {formatTime(sub.startTime)} - {formatTime(sub.endTime)} | {formatLocation(sub.location)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                        <span className="text-[10px] font-black text-slate-900 block">{sub.enrolled}/{sub.capacity}</span>
+                                                        <span className="uppercase text-slate-400 font-bold tracking-wider text-[9px] block">
+                                                            {sub.enrolled >= sub.capacity ? 'Full' : 'Open'}
+                                                        </span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    
-                    <button 
-                        onClick={() => handleAddClick(section)} 
-                        className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer ${
-                            isClosed 
-                                ? 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-md'
-                                : isWaitlist 
-                                    ? 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-md'
-                                    : 'bg-[#003C6C] text-white hover:bg-[#002a4d] hover:shadow-md'
-                        }`}
-                    >
-                        {isClosed ? (
-                            <>
-                                <AlertCircle className="w-4 h-4" /> 
-                                Closed (Add Anyway)
-                            </>
-                        ) : isWaitlist ? (
-                            <>
-                                <AlertCircle className="w-4 h-4" /> 
-                                Waitlist (Add Anyway)
-                            </>
-                        ) : (
-                            <>
-                                <Plus className="w-4 h-4" /> 
-                                Add Class
-                            </>
+                                )}
+                            </div>
                         )}
-                    </button>
+                        
+                        <button 
+                            onClick={() => handleAddClick(section)} 
+                            className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer ${
+                                isClosed 
+                                    ? 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-md'
+                                    : isWaitlist 
+                                        ? 'bg-amber-500 text-white hover:bg-amber-600 hover:shadow-md'
+                                        : 'bg-[#003C6C] text-white hover:bg-[#002a4d] hover:shadow-md'
+                            }`}
+                        >
+                            {isClosed ? (
+                                <>
+                                    <AlertCircle className="w-4 h-4" /> 
+                                    Closed (Add Anyway)
+                                </>
+                            ) : isWaitlist ? (
+                                <>
+                                    <AlertCircle className="w-4 h-4" /> 
+                                    Waitlist (Add Anyway)
+                                </>
+                            ) : (
+                                <>
+                                    <Plus className="w-4 h-4" /> 
+                                    Add Class
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
-              </div>
+                </div>
+            );
+            })
+        ) : (
+            // Fallback for empty results after specific section filtering
+            <div className="p-6 text-center text-slate-400 text-xs italic">
+                No sections match your specific filters.
             </div>
-          );
-        })}
+        )}
       </div>
     </div>
   );

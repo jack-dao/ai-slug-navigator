@@ -1,12 +1,16 @@
 import React from 'react';
-import { Search, BookOpen } from 'lucide-react'; // Added BookOpen icon
+import { Search, BookOpen } from 'lucide-react';
 import CourseCard from './CourseCard';
 
 const CourseList = ({ 
   searchQuery, 
   setSearchQuery, 
   processedCourses, 
-  onAdd 
+  onAdd,
+  professorRatings,
+  onShowProfessor,
+  sortOption,
+  filters
 }) => {
   return (
     <div className="p-6">
@@ -53,12 +57,15 @@ const CourseList = ({
             )}
           </div>
         ) : (
-          // --- RESULTS LIST ---
           processedCourses.map(course => (
             <CourseCard 
               key={course.id}
               course={course}
               onAdd={onAdd}
+              professorRatings={professorRatings}
+              onShowProfessor={onShowProfessor}
+              sortOption={sortOption}
+              filters={filters}
             />
           ))
         )}
