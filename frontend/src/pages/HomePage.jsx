@@ -183,6 +183,7 @@ const HomePage = ({ user, session }) => {
         }
     };
     fetchMetadata();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
 
   useEffect(() => {
@@ -245,7 +246,7 @@ const HomePage = ({ user, session }) => {
     return () => {
         isActive = false;
     };
-  }, [selectedTerm]); // 🛑 Dependency array is now clean because formatTermForDb is outside component
+  }, [selectedTerm]);
 
   const showNotification = (message, type = 'success') => {
     setNotification(null);
@@ -438,29 +439,35 @@ const HomePage = ({ user, session }) => {
                 )}
                 
                 <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white z-30 shadow-sm shrink-0">
-                    <div className="flex flex-row gap-3 md:gap-4 mb-4">
+                    {/* 🛑 DESIGN IMPROVEMENT: No wrapping. Just smart shrinking. */}
+                    <div className="flex items-center gap-3 md:gap-4 mb-4">
+                        
+                        {/* Filter Button - Shrinks to icon only on mobile */}
                         <button 
                             onClick={() => setShowFilters(!showFilters)} 
-                            className={`px-4 py-3 md:py-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-center shrink-0 gap-2 group ${showFilters ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-white border-slate-200 text-[#003C6C] hover:border-[#003C6C]'}`}
+                            className={`px-3 md:px-4 py-3 md:py-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-center shrink-0 gap-2 group ${showFilters ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-white border-slate-200 text-[#003C6C] hover:border-[#003C6C]'}`}
                         >
                             <Filter className="w-5 h-5" />
-                            <span className="font-bold text-sm">Filters</span>
+                            <span className="font-bold text-sm hidden md:inline">Filters</span>
                         </button>
 
-                        <div className="relative flex-1 group min-w-0">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#003C6C] w-5 h-5 transition-colors" />
+                        {/* Search Input - FLEX-1 (Takes all remaining space) + min-width to stay usable */}
+                        <div className="relative flex-1 group min-w-[140px]">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003C6C] w-5 h-5 transition-colors" />
                             <input 
                                 type="text" 
-                                placeholder="Search by course name, code, or instructor..."
-                                className="w-full pl-12 pr-4 py-3 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm bg-white" 
+                                placeholder="Search courses..."
+                                className="w-full pl-12 pr-4 py-3 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm bg-white text-sm truncate" 
                                 value={searchQuery} 
                                 onChange={(e) => setSearchQuery(e.target.value)} 
                             />
                         </div>
                         
-                        <div className="relative w-64 hidden md:block shrink-0">
+                        {/* Sort Dropdown - HIDDEN on small mobile, visible as Icon on Tablet, Full on Desktop */}
+                        {/* We use a container that doesn't shrink (shrink-0) so it doesn't get crushed */}
+                        <div className="hidden sm:block shrink-0 w-48 lg:w-64">
                             <CustomDropdown 
-                                prefix="Sort by: "
+                                prefix="Sort: "
                                 value={filters.sort}
                                 options={['Best Match', 'Rating', 'Difficulty']}
                                 onChange={(val) => setFilters({...filters, sort: val})}
@@ -468,6 +475,7 @@ const HomePage = ({ user, session }) => {
                         </div>
                     </div>
                     
+                    {/* Result Counter */}
                     <div className="flex items-center justify-between">
                         <span className="font-bold text-sm text-slate-800">{processedCourses.length} Results</span>
                         {isBackgroundFetching && (

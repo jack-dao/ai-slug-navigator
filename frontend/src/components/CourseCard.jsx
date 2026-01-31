@@ -13,8 +13,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
   const { geCode, prerequisites, career, grading } = course;
 
   const handleToggleDescription = async () => {
-    if (descriptionText) return;
-
+    if (descriptionText) return; 
     setIsLoadingDesc(true);
     try {
         const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -62,18 +61,15 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                 return stats && stats.avgRating >= filters.minRating;
             });
         }
-        
         if (filters.openOnly) {
             sections = sections.filter(s => s.status !== 'Closed' && s.status !== 'Wait List');
         }
-
         if (filters.days && filters.days.length > 0) {
             sections = sections.filter(s => {
                 const sDays = s.days || "";
                 return filters.days.some(day => sDays.includes(day));
             });
         }
-
         if (filters.timeRange && (filters.timeRange[0] > 7 || filters.timeRange[1] < 23)) {
              sections = sections.filter(s => {
                 const start = parseTime(s.startTime);
@@ -113,23 +109,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
   };
 
   const getGEMapping = (code) => {
-    const map = {
-      'CC': 'Cross-Cultural Analysis', 
-      'ER': 'Ethnicity and Race', 
-      'IM': 'Interpreting Arts and Media',
-      'MF': 'Mathematical and Formal Reasoning', 
-      'SI': 'Scientific Inquiry', 
-      'SR': 'Statistical Reasoning',
-      'TA': 'Textual Analysis', 
-      'PE-E': 'Environmental Awareness', 
-      'PE-H': 'Human Behavior', 
-      'PE-T': 'Technology and Society',
-      'PR-E': 'Collaborative Endeavor', 
-      'PR-C': 'Creative Process', 
-      'PR-S': 'Service Learning',
-      'C': 'Composition', 
-      'DC': 'Disciplinary Communication'
-    };
+    const map = { 'CC': 'Cross-Cultural Analysis', 'ER': 'Ethnicity and Race', 'IM': 'Interpreting Arts and Media', 'MF': 'Mathematical and Formal Reasoning', 'SI': 'Scientific Inquiry', 'SR': 'Statistical Reasoning', 'TA': 'Textual Analysis', 'PE-E': 'Environmental Awareness', 'PE-H': 'Human Behavior', 'PE-T': 'Technology and Society', 'PR-E': 'Collaborative Endeavor', 'PR-C': 'Creative Process', 'PR-S': 'Service Learning', 'C': 'Composition', 'DC': 'Disciplinary Communication' };
     return map[code] || code;
   };
 
@@ -181,7 +161,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
   };
 
   return (
-    <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 overflow-visible group/card w-full">
+    <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 overflow-hidden group/card w-full">
       <div className="px-6 py-5 bg-white rounded-t-[20px] border-t border-l border-r border-slate-200 border-b border-b-slate-100">
         <div className="flex justify-between items-start mb-3 flex-wrap gap-4">
             <div>
@@ -204,7 +184,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
             )}
         </div>
         
-        {/* Lazy Loading Description */}
         <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm space-y-3">
              <div className="flex gap-2 items-start">
                   <div className="flex items-center gap-1.5 font-bold text-[#003C6C] whitespace-nowrap shrink-0 mt-0.5">
@@ -244,7 +223,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
       </div>
 
       <div className="divide-y divide-slate-200 border-l border-r border-b border-slate-200 rounded-b-[20px]">
-        {/* Only Render Filtered Sections */}
         {sortedSections.length > 0 ? (
             sortedSections.map((section, index) => {
             const hasDiscussions = section.subSections?.length > 0;
@@ -264,15 +242,17 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                 <div key={section.id} className={`p-6 hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
                 <div className="flex flex-wrap gap-6">
                     
-                    <div className="flex-[10_1_380px] flex flex-col md:flex-row gap-4 md:gap-6">
-                        <div className="w-full md:w-[180px] shrink-0">
+                    {/* 🛑 FIX: Use 2xl:flex-row. Stays vertical on most screens. */}
+                    <div className="flex-[10_1_380px] flex flex-col 2xl:flex-row gap-4 2xl:gap-6 min-w-0">
+                        {/* Instructor Block */}
+                        <div className="w-full 2xl:w-[180px] shrink-0">
                             <p className="text-[10px] font-bold text-[#003C6C] mb-1">Instructor</p>
                             <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-start gap-2 group/prof text-left cursor-pointer w-full">
                                 <div className="w-10 h-10 rounded-full bg-[#003C6C]/5 flex items-center justify-center text-[#003C6C] shrink-0">
                                     <User className="w-5 h-5" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <span className="block font-bold text-slate-900 group-hover/prof:text-[#003C6C] group-hover/prof:underline decoration-2 underline-offset-2 transition-colors leading-tight">
+                                    <span className="block font-bold text-slate-900 group-hover/prof:text-[#003C6C] group-hover/prof:underline decoration-2 underline-offset-2 transition-colors leading-tight truncate">
                                         {formatInstructor(section.instructor)}
                                     </span>
                                     {ratingData ? (
@@ -289,49 +269,50 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                             </button>
                         </div>
 
-                        <div className="flex-1 grid grid-cols-2 gap-y-3 gap-x-4 min-w-[200px]">
-                            <div>
+                        {/* Grid Data */}
+                        <div className="flex-1 grid grid-cols-2 gap-y-3 gap-x-4 min-w-0">
+                            <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Class Number</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <Hash className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                    <span>{section.classNumber || '---'}</span>
+                                    <span className="truncate">{section.classNumber || '---'}</span>
                                 </div>
                             </div>
-                            <div>
+                            <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Instruction</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <Monitor className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                    <span>{section.instructionMode || 'In Person'}</span>
+                                    <span className="truncate">{section.instructionMode || 'In Person'}</span>
                                 </div>
                             </div>
-                            <div>
+                            <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Career</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <GraduationCap className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                    <span>{formatMetaValue('Career', career || 'Undergraduate')}</span>
+                                    <span className="truncate">{formatMetaValue('Career', career || 'Undergraduate')}</span>
                                 </div>
                             </div>
-                            <div>
+                            <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Grading</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <BookOpen className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
-                                    <span>{formatMetaValue('Grading', grading ? 'Student Option' : 'Letter')}</span>
+                                    <span className="truncate">{formatMetaValue('Grading', grading ? 'Student Option' : 'Letter')}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex-[1_1_220px] flex flex-col justify-center md:border-l border-slate-100 md:pl-6 border-dashed min-w-[200px] border-t md:border-t-0 pt-4 md:pt-0">
+                    <div className="flex-[1_1_220px] flex flex-col justify-center 2xl:border-l border-slate-100 2xl:pl-6 border-dashed min-w-[200px] border-t 2xl:border-t-0 pt-4 2xl:pt-0">
                         <div className="flex items-start gap-4 mb-4">
                             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
                                 <Clock className="w-5 h-5" />
                             </div>
-                            <div>
-                                <p className="font-bold text-slate-900 text-sm">{expandDays(section.days)}</p>
-                                <p className="text-xs font-bold text-slate-900 mt-0.5">{formatTime(section.startTime)} - {formatTime(section.endTime)}</p>
+                            <div className="min-w-0 flex-1">
+                                <p className="font-bold text-slate-900 text-sm truncate">{expandDays(section.days)}</p>
+                                <p className="text-xs font-bold text-slate-900 mt-0.5 truncate">{formatTime(section.startTime)} - {formatTime(section.endTime)}</p>
                                 <div className="flex items-center gap-1.5 mt-1.5 text-xs font-bold text-slate-600">
                                     <MapPin className="w-3 h-3 shrink-0" />
-                                    <span className="leading-tight">{formatLocation(section.location)}</span>
+                                    <span className="leading-tight truncate">{formatLocation(section.location)}</span>
                                 </div>
                             </div>
                         </div>
@@ -442,7 +423,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
             );
             })
         ) : (
-            // Fallback for empty results after specific section filtering
             <div className="p-6 text-center text-slate-400 text-xs italic">
                 No sections match your specific filters.
             </div>

@@ -44,31 +44,32 @@ const Header = ({
 
   return (
     <header className="bg-[#003C6C] border-b border-[#FDC700] sticky top-0 z-[60] shadow-xl shrink-0 h-[70px] md:h-[80px] overflow-visible select-none">
-      <div className="w-full h-full px-4 md:px-8 flex items-center justify-between">
+      <div className="w-full h-full px-4 md:px-6 lg:px-8 flex items-center justify-between gap-3">
         
-        <div className="flex items-center gap-1 min-w-0 shrink">
+        {/* LEFT: Logo & Term Selector */}
+        <div className="flex items-center gap-1 min-w-0 shrink-0">
           <img
             src={compassLogo}
             alt="AI Slug Navigator"
-            className="h-[60px] md:h-[104px] w-auto object-contain drop-shadow-md -my-3 relative z-10 top-[2px] -mr-4 md:-mr-7 shrink-0"
+            className="h-[50px] md:h-[90px] w-auto object-contain drop-shadow-md -my-3 relative z-10 top-[2px] -mr-3 md:-mr-6 shrink-0"
           />
 
           <div className="leading-none -ml-1 flex flex-col justify-center">
-            <h1 className="text-lg md:text-2xl font-bold text-white tracking-tight leading-none whitespace-nowrap">
+            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-white tracking-tight leading-none whitespace-nowrap">
               AI Slug Navigator
             </h1>
             <div className="mt-1 flex items-center gap-2 text-[10px] md:text-[11px] font-extrabold text-blue-100">
-              <span className="inline-flex items-center gap-1.5 shrink-0">
+              {/* Hide subtitle on smaller desktops to save space */}
+              <span className="inline-flex items-center gap-1.5 shrink-0 hidden xl:inline-flex">
                 <GraduationCap className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#FDC700]" />
-                <span className="hidden md:inline">UC Santa Cruz</span>
-                <span className="md:hidden">UCSC</span>
+                <span className="whitespace-nowrap">UC Santa Cruz</span>
               </span>
-              <span className="h-3 w-px bg-white/25 shrink-0" />
+              <span className="h-3 w-px bg-white/25 shrink-0 hidden xl:block" />
               
               <div className="relative" ref={termDropdownRef}>
                 <button 
                   onClick={() => setShowTermDropdown(!showTermDropdown)}
-                  className="tracking-wide text-blue-50/95 leading-tight hover:text-white transition-colors cursor-pointer flex items-center gap-1 group"
+                  className="tracking-wide text-blue-50/95 leading-tight hover:text-white transition-colors cursor-pointer flex items-center gap-1 group whitespace-nowrap"
                 >
                   {selectedTerm}
                   <ChevronDown className="w-3 h-3 opacity-0 -ml-1 group-hover:opacity-50 transition-opacity" />
@@ -100,9 +101,10 @@ const Header = ({
           </div>
         </div>
 
-        {/* CENTER: Tabs (HIDDEN ON MOBILE) */}
-        <div className="hidden md:flex justify-center absolute left-1/2 -translate-x-1/2">
-          <div className="flex bg-[#002a4d]/60 backdrop-blur-md rounded-lg border border-white/10 shadow-lg overflow-hidden">
+        {/* CENTER: Tabs - "Hybrid" Mode */}
+        {/* Visible on MD+. Text hidden on MD/LG (Icon Only), visible on XL (Icon + Text). */}
+        <div className="hidden md:flex justify-center flex-1 min-w-0 px-4">
+          <div className="flex bg-[#002a4d]/60 backdrop-blur-md rounded-lg border border-white/10 shadow-lg overflow-hidden shrink-0">
             {['search', 'schedule', 'about'].map((tab) => {
               const Icon = tab === 'search' ? Search 
                          : tab === 'schedule' ? CalendarDays 
@@ -112,34 +114,43 @@ const Header = ({
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-8 py-2.5 text-sm font-bold transition-all duration-200 rounded-none cursor-pointer flex items-center gap-2 ${
+                  className={`px-4 lg:px-6 xl:px-8 py-2.5 text-sm font-bold transition-all duration-200 rounded-none cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                     activeTab === tab
                       ? 'bg-white text-[#003C6C] shadow-sm'
                       : 'text-blue-200 hover:text-white hover:bg-white/5'
                   }`}
+                  title={tab === 'schedule' ? 'My Schedule' : tab === 'about' ? 'About' : 'Search'}
                 >
-                  <Icon className={`w-4 h-4 ${activeTab === tab ? 'stroke-[3px]' : ''}`} />
-                  {tab === 'schedule' ? 'My Schedule' : tab === 'about' ? 'About' : 'Search'}
+                  <Icon className={`w-5 h-5 ${activeTab === tab ? 'stroke-[3px]' : ''}`} />
+                  {/* Text only shows on XL screens */}
+                  <span className="hidden xl:inline">
+                    {tab === 'schedule' ? 'My Schedule' : tab === 'about' ? 'About' : 'Search'}
+                  </span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-4 justify-end shrink-0">
+        {/* RIGHT: Actions */}
+        <div className="flex items-center gap-2 md:gap-3 lg:gap-4 justify-end shrink-0 ml-auto">
           <button
             onClick={onToggleChat}
-            className="hidden md:flex h-12 items-center gap-3 pl-3 pr-5 rounded-xl transition-all cursor-pointer shadow-lg border-2 border-[#FDC700] bg-[#FDC700] text-[#003C6C] hover:bg-[#eec00e] active:translate-y-0.5 group overflow-visible"
+            className="hidden md:flex h-10 lg:h-12 items-center gap-2 lg:gap-3 pl-3 pr-4 lg:pr-5 rounded-xl transition-all cursor-pointer shadow-lg border-2 border-[#FDC700] bg-[#FDC700] text-[#003C6C] hover:bg-[#eec00e] active:translate-y-0.5 group overflow-visible whitespace-nowrap"
           >
-            <span className="relative w-8 h-8 shrink-0 overflow-visible">
+            <span className="relative w-6 h-6 lg:w-8 lg:h-8 shrink-0 overflow-visible">
               <img
                 src={sammyChat}
                 alt="Sammy"
-                className="absolute inset-0 w-full h-full object-contain drop-shadow-sm scale-[3.65] -translate-y-[1px] transition-transform group-hover:scale-[3.9]"
+                className="absolute inset-0 w-full h-full object-contain drop-shadow-sm scale-[3.0] lg:scale-[3.65] -translate-y-[1px] transition-transform group-hover:scale-[3.9]"
               />
             </span>
-            <span className="text-sm font-bold leading-none">
+            {/* Hide text on smaller desktops to save space */}
+            <span className="text-xs lg:text-sm font-bold leading-none hidden xl:inline">
               {showAIChat ? 'Hide Assistant' : 'Ask Sammy AI'}
+            </span>
+            <span className="text-xs lg:text-sm font-bold leading-none xl:hidden">
+              {showAIChat ? 'Hide' : 'AI Help'}
             </span>
           </button>
 
@@ -172,9 +183,9 @@ const Header = ({
           ) : (
             <button
               onClick={onLoginClick}
-              className="px-4 md:px-6 py-2 md:py-2.5 bg-[#FDC700] text-[#003C6C] font-bold rounded-xl text-xs md:text-sm hover:bg-[#eec00e] transition-all cursor-pointer border-2 border-[#FDC700] flex items-center gap-2 shadow-lg active:shadow-inner active:translate-y-0.5"
+              className="px-3 lg:px-6 py-2 md:py-2.5 bg-[#FDC700] text-[#003C6C] font-bold rounded-xl text-xs md:text-sm hover:bg-[#eec00e] transition-all cursor-pointer border-2 border-[#FDC700] flex items-center gap-2 shadow-lg active:shadow-inner active:translate-y-0.5 whitespace-nowrap"
             >
-              <User className="w-4 h-4" /> <span className="hidden md:inline">Log in</span>
+              <User className="w-4 h-4" /> <span className="hidden lg:inline">Log in</span>
             </button>
           )}
         </div>
