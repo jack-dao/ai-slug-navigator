@@ -66,7 +66,7 @@ const ChatSidebar = ({ messages = [], onSendMessage, isLoading, schoolName }) =>
                     onClick={() =>
                       !isLoading && onSendMessage('What is an easy GE to take that fits in with my schedule?')
                     }
-                    className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
+                    className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3 cursor-pointer"
                     disabled={isLoading}
                   >
                     <div className="flex-1">
@@ -80,7 +80,8 @@ const ChatSidebar = ({ messages = [], onSendMessage, isLoading, schoolName }) =>
 
                   <button
                     onClick={() => !isLoading && onSendMessage('Build a schedule with no Friday classes')}
-                    className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
+                    // 🛑 FIX: Added cursor-pointer explicitly
+                    className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3 cursor-pointer"
                     disabled={isLoading}
                   >
                     <div className="flex-1">
@@ -92,7 +93,8 @@ const ChatSidebar = ({ messages = [], onSendMessage, isLoading, schoolName }) =>
 
                   <button
                     onClick={() => !isLoading && onSendMessage('What should I take to balance my course workload?')}
-                    className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3"
+                    // 🛑 FIX: Added cursor-pointer explicitly
+                    className="w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-[#FDC700] hover:shadow-md transition-all flex items-start gap-3 cursor-pointer"
                     disabled={isLoading}
                   >
                     <div className="flex-1">
@@ -158,7 +160,7 @@ const ChatSidebar = ({ messages = [], onSendMessage, isLoading, schoolName }) =>
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="w-10 h-10 shrink-0 rounded-xl bg-[#FDC700] text-[#003C6C] flex items-center justify-center shadow-sm hover:bg-[#e5b600] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-10 h-10 shrink-0 rounded-xl bg-[#FDC700] text-[#003C6C] flex items-center justify-center shadow-sm hover:bg-[#e5b600] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             aria-label="Send message"
           >
             <Send className="w-4 h-4" />
