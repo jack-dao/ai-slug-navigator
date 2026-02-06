@@ -187,7 +187,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
     >
       <div className="px-6 py-5 bg-white rounded-t-[20px] border-t border-l border-r border-slate-200 border-b border-b-slate-100">
         <div className="flex justify-between items-start mb-3 flex-wrap gap-4">
-            {/* 🟢 FIX: Added min-w-[200px] to title container to prevent squishing */}
             <div className="flex-1 min-w-[200px]">
                 <div className="flex items-center gap-3 mb-1 flex-wrap">
                     <h3 className="text-2xl font-[800] text-[#003C6C] tracking-tight whitespace-nowrap">{course.code}</h3>
@@ -292,10 +291,9 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
             return (
                 <div key={section.id} className={`p-6 hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
                 
-                {/* 🟢 FIX: flex-wrap + gap-6 ensures columns wrap instead of shrink */}
                 <div className="flex flex-wrap gap-6">
                     
-                    {/* COL 1: Instructor (flex-[1_0_300px] = grow 1, shrink 0, basis 300px) */}
+                    {/* COL 1: Instructor */}
                     <div className="flex-[1_0_300px] flex flex-col gap-4 min-w-[300px]">
                         <div className="w-full shrink-0">
                             <p className="text-[10px] font-bold text-[#003C6C] mb-1 uppercase tracking-wider">Instructor</p>
@@ -321,30 +319,30 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                             </button>
                         </div>
 
-                        {/* 🟢 FIX: Replaced grid with flex-wrap to prevent internal squishing */}
-                        <div className="flex flex-wrap gap-y-3 gap-x-6">
-                            <div className="min-w-[120px]">
+                        {/* 🟢 FIX: Reverted to Grid-cols-2 to enforce 2x2 layout, relied on parent min-w-[300px] to prevent squish */}
+                        <div className="grid grid-cols-2 gap-y-3 gap-x-6">
+                            <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-[#003C6C] mb-0.5 whitespace-nowrap">Class Number</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <Hash className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
                                     <span className="truncate">{section.classNumber || '---'}</span>
                                 </div>
                             </div>
-                            <div className="min-w-[120px]">
+                            <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-[#003C6C] mb-0.5 whitespace-nowrap">Instruction</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <Monitor className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
                                     <span className="truncate">{section.instructionMode || 'In Person'}</span>
                                 </div>
                             </div>
-                            <div className="min-w-[120px]">
+                            <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-[#003C6C] mb-0.5 whitespace-nowrap">Career</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <GraduationCap className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
                                     <span className="truncate">{formatMetaValue('Career', career || 'Undergraduate')}</span>
                                 </div>
                             </div>
-                            <div className="min-w-[120px]">
+                            <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-[#003C6C] mb-0.5 whitespace-nowrap">Grading</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <BookOpen className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
@@ -354,7 +352,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                         </div>
                     </div>
 
-                    {/* COL 2: Time - flex-[1_0_200px] ensures it NEVER shrinks below 200px */}
+                    {/* COL 2: Time */}
                     <div className="flex-[1_0_200px] flex flex-col justify-center min-w-[200px] pt-4 border-t border-dashed border-slate-200 md:border-t-0 md:pt-0 md:border-l md:pl-6">
                         <div className="flex items-start gap-4 mb-4">
                             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
@@ -390,7 +388,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                         </div>
                     </div>
 
-                    {/* COL 3: Buttons - flex-[1_0_220px] ensures it NEVER shrinks below 220px */}
+                    {/* COL 3: Buttons */}
                     <div className="flex-[1_0_220px] flex flex-col gap-2 justify-center min-w-[220px] 2xl:border-l 2xl:pl-6 border-slate-200 border-dashed">
                         {hasDiscussions && (
                             <div className={`relative ${openDropdownId === section.id ? 'z-50' : 'z-0'}`} ref={openDropdownId === section.id ? dropdownRef : null}>
