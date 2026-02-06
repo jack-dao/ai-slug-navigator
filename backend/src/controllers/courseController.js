@@ -1,15 +1,43 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Helper: Sort terms chronologically (Newest First)
+// Sorts by Year Descending -> Season Descending (Fall > Summer > Spring > Winter)
+const sortTermsDesc = (terms) => {
+  const seasonWeight = { 'Winter': 1, 'Spring': 2, 'Summer': 3, 'Fall': 4 };
+  
+  return terms.sort((a, b) => {
+    // Expected format: "2026 Winter Quarter"
+    const partsA = a.split(' '); 
+    const partsB = b.split(' ');
+    
+    const yearA = parseInt(partsA[0]);
+    const seasonA = partsA[1];
+    
+    const yearB = parseInt(partsB[0]);
+    const seasonB = partsB[1];
 
+    if (yearA !== yearB) {
+      return yearB - yearA; // Sort years (2026 before 2025)
+    }
+    // If years are same, sort seasons (Fall before Winter)
+    return (seasonWeight[seasonB] || 0) - (seasonWeight[seasonA] || 0);
+  });
+};
+
+// Fallback logic if DB is empty
 function getSmartTerm() {
   const now = new Date();
-  const month = now.getMonth(); 
+  const month = now.getMonth(); // 0 = Jan, 11 = Dec
   const year = now.getFullYear();
 
+  // Winter: Jan(0) to Mar(2)
   if (month <= 2) return `Winter ${year}`;
+  // Spring: Apr(3) to Jun(5)
   if (month <= 5) return `Spring ${year}`;
-  if (month <= 8) return `Summer ${year}`;
+  // Summer: Jul(6) to Aug(7) (Strict cutoff before Sept)
+  if (month <= 7) return `Summer ${year}`;
+  // Fall: Sep(8) to Dec(11)
   return `Fall ${year}`;
 }
 
@@ -19,8 +47,18 @@ const getCourses = async (req, res) => {
 
     const courses = await prisma.course.findMany({
       where: term ? { term: term } : {}, 
-      include: {
-        school: true,
+      // 🛑 OPTIMIZATION: Only fetch lightweight fields.
+      // We EXCLUDE 'description' and 'prerequisites' here.
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        credits: true,
+        geCode: true,
+        career: true,
+        grading: true,
+        term: true,
+        schoolId: true,
         sections: {
           where: { 
             parentId: null 
@@ -40,6 +78,7 @@ const getCourses = async (req, res) => {
       }
     });
 
+    // Custom sort for "CSE 101" vs "CSE 15" logic
     const sortedCourses = courses.sort((a, b) => {
       const codeA = a.code || ""; 
       const codeB = b.code || "";
@@ -58,19 +97,54 @@ const getCourses = async (req, res) => {
   }
 };
 
+// 🆕 NEW: Fetch description/prereqs only when requested
+const getCourseDescription = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const course = await prisma.course.findUnique({
+      where: { id: id },
+      select: {
+        description: true,
+        prerequisites: true
+      }
+    });
+    
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    res.json(course);
+  } catch (error) {
+    console.error("Description Fetch Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getSchoolInfo = async (req, res) => {
   try {
-    const school = await prisma.school.findFirst({
-      where: { name: "UCSC" }
+    // 1. Ask the DB: "What terms do we actually have?"
+    const distinctTerms = await prisma.course.findMany({
+      select: { term: true },
+      distinct: ['term']
     });
 
-    const dynamicTerm = school?.currentTerm || getSmartTerm();
+    let termsList = distinctTerms.map(t => t.term).filter(Boolean);
+    let latestTerm = null;
+
+    if (termsList.length > 0) {
+      // 2. If DB has data, pick the absolute latest one
+      const sorted = sortTermsDesc(termsList);
+      latestTerm = sorted[0]; 
+    } else {
+      // 3. Fallback only if DB is empty
+      latestTerm = getSmartTerm();
+    }
 
     res.json({
       id: 'ucsc',
       name: 'UC Santa Cruz',
       shortName: 'UCSC',
-      term: dynamicTerm, 
+      term: latestTerm, 
       status: 'active'
     });
   } catch (error) {
@@ -84,9 +158,10 @@ const getTerms = async (req, res) => {
     const terms = await prisma.course.findMany({
       select: { term: true },
       distinct: ['term'], 
-      orderBy: { term: 'desc' }
     });
-    res.json(terms.map(t => t.term));
+    
+    const sortedTerms = sortTermsDesc(terms.map(t => t.term).filter(Boolean));
+    res.json(sortedTerms);
   } catch (error) {
     console.error("Terms Error:", error);
     res.status(500).json({ error: 'Failed to fetch terms' });
@@ -95,6 +170,7 @@ const getTerms = async (req, res) => {
 
 module.exports = {
   getCourses,
+  getCourseDescription, // Export the new function
   getSchoolInfo,
   getTerms 
 };

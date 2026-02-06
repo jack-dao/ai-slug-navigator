@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { getCourses, getSchoolInfo, getTerms } = require('../controllers/courseController');
+const courseController = require('../controllers/courseController');
 
-router.get('/', getCourses);
-router.get('/info', getSchoolInfo);
-router.get('/terms', getTerms);
+router.get('/', courseController.getCourses);
+router.get('/info', courseController.getSchoolInfo);
+router.get('/terms', courseController.getTerms);
+
+// 🆕 NEW ROUTE: Specific endpoint for lazy loading text
+router.get('/:id/description', courseController.getCourseDescription);
 
 module.exports = router;
