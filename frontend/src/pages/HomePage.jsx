@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, AlertCircle, CheckCircle, Search, Filter, BookOpen, MessageSquare, Calendar as CalendarIcon, Info, Loader2, RefreshCw } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, Search, Filter, BookOpen, MessageSquare, Calendar as CalendarIcon, Info, Loader2, RefreshCw, SlidersHorizontal, ArrowUpDown, X } from 'lucide-react';
 import { get, set } from 'idb-keyval';
 
 import Header from '../components/Header'; 
@@ -438,51 +438,78 @@ const HomePage = ({ user, session }) => {
                     </div>
                 )}
                 
-                <div className="px-4 md:px-8 py-6 border-b border-slate-100 bg-white z-30 shadow-sm shrink-0">
-                    {/* 🛑 DESIGN IMPROVEMENT: No wrapping. Just smart shrinking. */}
-                    <div className="flex items-center gap-3 md:gap-4 mb-4">
+                <div className="px-4 md:px-8 py-4 border-b border-slate-100 bg-white z-30 shadow-sm shrink-0">
+                    <div className="flex flex-col gap-3">
                         
-                        {/* Filter Button - Shrinks to icon only on mobile */}
-                        <button 
-                            onClick={() => setShowFilters(!showFilters)} 
-                            className={`px-3 md:px-4 py-3 md:py-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-center shrink-0 gap-2 group ${showFilters ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-white border-slate-200 text-[#003C6C] hover:border-[#003C6C]'}`}
-                        >
-                            <Filter className="w-5 h-5" />
-                            <span className="font-bold text-sm hidden md:inline">Filters</span>
-                        </button>
+                        {/* 🟢 REDESIGNED HEADER: Search Bar on left, Pills on right */}
+                        <div className="flex items-center gap-3 w-full">
+                            
+                            {/* Filter Toggle (Mobile Only) */}
+                            <button 
+                                onClick={() => setShowFilters(!showFilters)} 
+                                // 🛑 FIX: Added cursor-pointer
+                                className={`md:hidden p-2 rounded-xl border transition-all cursor-pointer ${showFilters ? 'bg-slate-100 border-slate-300' : 'bg-white border-slate-200'}`}
+                            >
+                                <Filter className="w-5 h-5 text-slate-600" />
+                            </button>
 
-                        {/* Search Input - FLEX-1 (Takes all remaining space) + min-width to stay usable */}
-                        <div className="relative flex-1 group min-w-[140px]">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003C6C] w-5 h-5 transition-colors" />
-                            <input 
-                                type="text" 
-                                placeholder="Search courses..."
-                                className="w-full pl-12 pr-4 py-3 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm bg-white text-sm truncate" 
-                                value={searchQuery} 
-                                onChange={(e) => setSearchQuery(e.target.value)} 
-                            />
+                            {/* Search Input */}
+                            <div className="relative flex-1 group">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#003C6C] w-5 h-5 transition-colors" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search courses..."
+                                    className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-[#003C6C] outline-none transition-all shadow-sm bg-slate-50/50 text-sm font-medium" 
+                                    value={searchQuery} 
+                                    onChange={(e) => setSearchQuery(e.target.value)} 
+                                />
+                            </div>
+
+                            {/* Desktop Filter Toggle + Sort Pill */}
+                            <div className="hidden md:flex items-center gap-2">
+                                <button 
+                                    onClick={() => setShowFilters(!showFilters)} 
+                                    // 🛑 FIX: Added cursor-pointer here
+                                    className={`flex items-center gap-2 px-4 py-3 rounded-full text-xs font-bold transition-all border cursor-pointer ${
+                                        showFilters 
+                                            ? 'bg-slate-100 border-slate-300 text-slate-800' 
+                                            : 'bg-white border-slate-200 text-slate-600 hover:border-[#003C6C] hover:text-[#003C6C]'
+                                    }`}
+                                >
+                                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                                    <span>Filters</span>
+                                </button>
+                                
+                                <CustomDropdown 
+                                    prefix="Sort: "
+                                    value={filters.sort}
+                                    options={['Best Match', 'Rating', 'Difficulty']}
+                                    onChange={(val) => setFilters({...filters, sort: val})}
+                                    triggerClassName="flex items-center justify-between gap-2 bg-white border border-slate-200 hover:border-[#003C6C] rounded-full px-4 py-3 text-xs font-bold text-slate-600 hover:text-[#003C6C] transition-all cursor-pointer whitespace-nowrap min-w-[140px]"
+                                />
+                            </div>
                         </div>
-                        
-                        {/* Sort Dropdown - HIDDEN on small mobile, visible as Icon on Tablet, Full on Desktop */}
-                        {/* We use a container that doesn't shrink (shrink-0) so it doesn't get crushed */}
-                        <div className="hidden sm:block shrink-0 w-48 lg:w-64">
-                            <CustomDropdown 
-                                prefix="Sort: "
-                                value={filters.sort}
-                                options={['Best Match', 'Rating', 'Difficulty']}
-                                onChange={(val) => setFilters({...filters, sort: val})}
-                            />
+
+                        {/* Results Count Line */}
+                        <div className="flex items-center justify-between px-1">
+                             <div className="flex items-center gap-2">
+                                <span className="font-bold text-xs text-slate-400">{processedCourses.length} results found</span>
+                                {isBackgroundFetching && (
+                                    <RefreshCw className="w-3 h-3 text-slate-400 animate-spin"/>
+                                )}
+                             </div>
+                             
+                             {/* Mobile Sort Dropdown (Small) */}
+                             <div className="md:hidden">
+                                 <CustomDropdown 
+                                    value={filters.sort}
+                                    options={['Best Match', 'Rating', 'Difficulty']}
+                                    onChange={(val) => setFilters({...filters, sort: val})}
+                                    triggerClassName="flex items-center gap-1 text-xs font-bold text-slate-500 bg-transparent border-none p-0 cursor-pointer"
+                                    prefix="Sort: "
+                                 />
+                             </div>
                         </div>
-                    </div>
-                    
-                    {/* Result Counter */}
-                    <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-slate-800">{processedCourses.length} Results</span>
-                        {isBackgroundFetching && (
-                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 animate-pulse">
-                                <RefreshCw className="w-3 h-3 animate-spin"/> Updating...
-                            </span>
-                        )}
                     </div>
                 </div>
 

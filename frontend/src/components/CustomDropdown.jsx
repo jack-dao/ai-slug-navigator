@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
-const CustomDropdown = ({ value, options, onChange, placeholder, prefix = "" }) => {
+const CustomDropdown = ({ value, options, onChange, placeholder, prefix = "", triggerClassName }) => {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef(null);
 
@@ -16,17 +16,20 @@ const CustomDropdown = ({ value, options, onChange, placeholder, prefix = "" }) 
   }, []);
 
   return (
-    <div className="relative w-full" ref={ref}>
+    <div className="relative" ref={ref}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 hover:border-[#003C6C] transition-all shadow-sm active:scale-[0.99] cursor-pointer"
+        className={triggerClassName || "w-full flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 hover:border-[#003C6C] transition-all shadow-sm active:scale-[0.99] cursor-pointer"}
       >
-        <span className="truncate">{prefix}{value || placeholder}</span>
+        <span className="truncate flex items-center gap-1">
+            {prefix && <span className="text-slate-500 font-normal">{prefix}</span>}
+            <span className={prefix ? "text-slate-900" : ""}>{value || placeholder}</span>
+        </span>
         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
+        <div className="absolute top-full right-0 mt-2 min-w-[160px] bg-white border border-slate-100 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200 origin-top-right">
           <div className="p-1">
             {options.map((opt) => (
               <button

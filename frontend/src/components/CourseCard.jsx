@@ -180,7 +180,11 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
   };
 
   return (
-    <div className="bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 overflow-hidden group/card w-full min-w-[400px]">
+    <div 
+        className={`bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 group/card w-full min-w-[400px] ${
+            openDropdownId ? 'z-20 relative' : 'relative'
+        }`}
+    >
       <div className="px-6 py-5 bg-white rounded-t-[20px] border-t border-l border-r border-slate-200 border-b border-b-slate-100">
         <div className="flex justify-between items-start mb-3 flex-wrap gap-4">
             <div className="min-w-0 flex-1">

@@ -100,9 +100,18 @@ const getCourses = async (req, res) => {
 // 🆕 NEW: Fetch description/prereqs only when requested
 const getCourseDescription = async (req, res) => {
   const { id } = req.params;
+  
+  // 🛑 FIX START: Parse ID to Integer
+  const courseId = parseInt(id);
+
+  if (isNaN(courseId)) {
+      return res.status(400).json({ error: "Invalid course ID" });
+  }
+  // 🛑 FIX END
+
   try {
     const course = await prisma.course.findUnique({
-      where: { id: id },
+      where: { id: courseId }, // Use the parsed integer here
       select: {
         description: true,
         prerequisites: true
