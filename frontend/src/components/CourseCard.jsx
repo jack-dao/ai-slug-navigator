@@ -181,15 +181,16 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
 
   return (
     <div 
-        className={`bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 group/card w-full min-w-[400px] ${
+        className={`bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-md transition-all mb-6 group/card w-full ${
             openDropdownId ? 'z-20 relative' : 'relative'
         }`}
     >
       <div className="px-6 py-5 bg-white rounded-t-[20px] border-t border-l border-r border-slate-200 border-b border-b-slate-100">
         <div className="flex justify-between items-start mb-3 flex-wrap gap-4">
-            <div className="min-w-0 flex-1">
+            {/* 🟢 FIX: Added min-w-[200px] to title container to prevent squishing */}
+            <div className="flex-1 min-w-[200px]">
                 <div className="flex items-center gap-3 mb-1 flex-wrap">
-                    <h3 className="text-2xl font-[800] text-[#003C6C] tracking-tight">{course.code}</h3>
+                    <h3 className="text-2xl font-[800] text-[#003C6C] tracking-tight whitespace-nowrap">{course.code}</h3>
                     <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-md uppercase tracking-wide shrink-0">
                         {course.credits} Units
                     </span>
@@ -199,7 +200,7 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
             
             {geCode && (
                 <div className="flex flex-col items-end justify-center ml-auto shrink-0">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">General Education</span>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 whitespace-nowrap">General Education</span>
                     <div className="px-3 py-1.5 rounded-xl bg-[#003C6C]/5 border border-[#003C6C]/10 flex items-center gap-2">
                         <span className="text-sm font-bold text-[#003C6C] whitespace-nowrap">{getGEMapping(geCode)} ({geCode})</span>
                     </div>
@@ -244,7 +245,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                                           <BookOpen className="w-4 h-4" />
                                       </div>
                                       <div className="space-y-1">
-                                          {/* 🛑 FIX: Bumped to text-sm */}
                                           <span className="text-sm font-bold text-[#003C6C] mb-0.5 block">Description</span>
                                           <div className="text-slate-700 font-medium leading-relaxed break-words whitespace-normal">
                                               {descriptionText}
@@ -258,7 +258,6 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                                               <Lock className="w-4 h-4" />
                                           </div>
                                           <div className="space-y-1">
-                                              {/* 🛑 FIX: Bumped to text-sm */}
                                               <span className="text-sm font-bold text-[#003C6C] mb-0.5 block">Prerequisites</span>
                                               <div className="text-slate-700 font-medium leading-relaxed break-words whitespace-normal">
                                                   {prereqText.replace(/^Prerequisite\(s\):/i, '').trim()}
@@ -292,11 +291,14 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
 
             return (
                 <div key={section.id} className={`p-6 hover:bg-slate-50/50 transition-colors ${isLast ? 'rounded-b-[20px]' : ''}`}>
+                
+                {/* 🟢 FIX: flex-wrap + gap-6 ensures columns wrap instead of shrink */}
                 <div className="flex flex-wrap gap-6">
                     
-                    <div className="flex-[10_1_300px] flex flex-col gap-4 min-w-0">
+                    {/* COL 1: Instructor (flex-[1_0_300px] = grow 1, shrink 0, basis 300px) */}
+                    <div className="flex-[1_0_300px] flex flex-col gap-4 min-w-[300px]">
                         <div className="w-full shrink-0">
-                            <p className="text-[10px] font-bold text-[#003C6C] mb-1">Instructor</p>
+                            <p className="text-[10px] font-bold text-[#003C6C] mb-1 uppercase tracking-wider">Instructor</p>
                             <button onClick={() => onShowProfessor(section.instructor, ratingData)} className="flex items-start gap-2 group/prof text-left cursor-pointer w-full min-w-0">
                                 <div className="w-10 h-10 rounded-full bg-[#003C6C]/5 flex items-center justify-center text-[#003C6C] shrink-0">
                                     <User className="w-5 h-5" />
@@ -319,30 +321,31 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Class Number</p>
+                        {/* 🟢 FIX: Replaced grid with flex-wrap to prevent internal squishing */}
+                        <div className="flex flex-wrap gap-y-3 gap-x-6">
+                            <div className="min-w-[120px]">
+                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5 whitespace-nowrap">Class Number</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <Hash className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
                                     <span className="truncate">{section.classNumber || '---'}</span>
                                 </div>
                             </div>
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Instruction</p>
+                            <div className="min-w-[120px]">
+                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5 whitespace-nowrap">Instruction</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <Monitor className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
                                     <span className="truncate">{section.instructionMode || 'In Person'}</span>
                                 </div>
                             </div>
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Career</p>
+                            <div className="min-w-[120px]">
+                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5 whitespace-nowrap">Career</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <GraduationCap className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
                                     <span className="truncate">{formatMetaValue('Career', career || 'Undergraduate')}</span>
                                 </div>
                             </div>
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5">Grading</p>
+                            <div className="min-w-[120px]">
+                                <p className="text-[10px] font-bold text-[#003C6C] mb-0.5 whitespace-nowrap">Grading</p>
                                 <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
                                     <BookOpen className="w-3.5 h-3.5 text-[#003C6C] shrink-0" />
                                     <span className="truncate">{formatMetaValue('Grading', grading ? 'Student Option' : 'Letter')}</span>
@@ -351,7 +354,8 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                         </div>
                     </div>
 
-                    <div className="flex-[1_1_250px] flex flex-col justify-center min-w-0 pt-4 border-t border-dashed border-slate-200 md:border-t-0 md:pt-0 md:border-l md:pl-6">
+                    {/* COL 2: Time - flex-[1_0_200px] ensures it NEVER shrinks below 200px */}
+                    <div className="flex-[1_0_200px] flex flex-col justify-center min-w-[200px] pt-4 border-t border-dashed border-slate-200 md:border-t-0 md:pt-0 md:border-l md:pl-6">
                         <div className="flex items-start gap-4 mb-4">
                             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
                                 <Clock className="w-5 h-5" />
@@ -386,7 +390,8 @@ const CourseCard = ({ course, onAdd, professorRatings, onShowProfessor, sortOpti
                         </div>
                     </div>
 
-                    <div className="flex-[1_1_250px] flex flex-col gap-2 justify-center min-w-0 2xl:border-l 2xl:pl-6 border-slate-200 border-dashed">
+                    {/* COL 3: Buttons - flex-[1_0_220px] ensures it NEVER shrinks below 220px */}
+                    <div className="flex-[1_0_220px] flex flex-col gap-2 justify-center min-w-[220px] 2xl:border-l 2xl:pl-6 border-slate-200 border-dashed">
                         {hasDiscussions && (
                             <div className={`relative ${openDropdownId === section.id ? 'z-50' : 'z-0'}`} ref={openDropdownId === section.id ? dropdownRef : null}>
                                 <button 
