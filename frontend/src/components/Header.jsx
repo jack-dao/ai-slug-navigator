@@ -32,7 +32,7 @@ const Header = ({
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -59,7 +59,6 @@ const Header = ({
               AI Slug Navigator
             </h1>
             <div className="mt-1 flex items-center gap-2 text-[10px] md:text-[11px] font-extrabold text-blue-100">
-              {/* Hide subtitle on smaller desktops to save space */}
               <span className="inline-flex items-center gap-1.5 shrink-0 hidden xl:inline-flex">
                 <GraduationCap className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#FDC700]" />
                 <span className="whitespace-nowrap">UC Santa Cruz</span>
@@ -102,7 +101,6 @@ const Header = ({
         </div>
 
         {/* CENTER: Tabs - "Hybrid" Mode */}
-        {/* Visible on MD+. Text hidden on MD/LG (Icon Only), visible on XL (Icon + Text). */}
         <div className="hidden md:flex justify-center flex-1 min-w-0 px-4">
           <div className="flex bg-[#002a4d]/60 backdrop-blur-md rounded-lg border border-white/10 shadow-lg overflow-hidden shrink-0">
             {['search', 'schedule', 'about'].map((tab) => {
@@ -122,7 +120,6 @@ const Header = ({
                   title={tab === 'schedule' ? 'My Schedule' : tab === 'about' ? 'About' : 'Search'}
                 >
                   <Icon className={`w-5 h-5 ${activeTab === tab ? 'stroke-[3px]' : ''}`} />
-                  {/* Text only shows on XL screens */}
                   <span className="hidden xl:inline">
                     {tab === 'schedule' ? 'My Schedule' : tab === 'about' ? 'About' : 'Search'}
                   </span>
@@ -133,23 +130,27 @@ const Header = ({
         </div>
 
         {/* RIGHT: Actions */}
-        <div className="flex items-center gap-2 md:gap-3 lg:gap-4 justify-end shrink-0 ml-auto">
+        <div className="flex items-center gap-3 justify-end shrink-0 ml-auto">
+          
           <button
             onClick={onToggleChat}
-            className="hidden md:flex h-10 lg:h-12 items-center gap-2 lg:gap-3 pl-3 pr-4 lg:pr-5 rounded-xl transition-all cursor-pointer shadow-lg border-2 border-[#FDC700] bg-[#FDC700] text-[#003C6C] hover:bg-[#eec00e] active:translate-y-0.5 group overflow-visible whitespace-nowrap"
+            className={`hidden md:flex h-10 lg:h-11 items-center gap-2 lg:gap-3 pl-3 pr-5 rounded-full transition-all cursor-pointer border group overflow-visible whitespace-nowrap active:scale-95 shadow-md hover:shadow-lg ${
+                showAIChat 
+                ? 'bg-white text-[#003C6C] border-white ring-2 ring-white/50'
+                : 'bg-[#FDC700] text-[#003C6C] border-[#FDC700] hover:bg-[#eec00e] hover:border-[#eec00e]'
+            }`}
           >
-            <span className="relative w-6 h-6 lg:w-8 lg:h-8 shrink-0 overflow-visible">
+            <span className="relative w-7 h-7 lg:w-8 lg:h-8 shrink-0 overflow-visible">
               <img
                 src={sammyChat}
                 alt="Sammy"
-                className="absolute inset-0 w-full h-full object-contain drop-shadow-sm scale-[3.0] lg:scale-[3.65] -translate-y-[1px] transition-transform group-hover:scale-[3.9]"
+                className="absolute inset-0 w-full h-full object-contain drop-shadow-sm scale-[2.5] lg:scale-[2.8] -translate-y-[2px] transition-transform group-hover:scale-[3.0] group-hover:-translate-y-[3px]"
               />
             </span>
-            {/* Hide text on smaller desktops to save space */}
             <span className="text-xs lg:text-sm font-bold leading-none hidden xl:inline">
               {showAIChat ? 'Hide Assistant' : 'Ask Sammy AI'}
             </span>
-            <span className="text-xs lg:text-sm font-bold leading-none xl:hidden">
+             <span className="text-xs lg:text-sm font-bold leading-none xl:hidden">
               {showAIChat ? 'Hide' : 'AI Help'}
             </span>
           </button>
@@ -158,7 +159,7 @@ const Header = ({
             <div className="relative" ref={profileDropdownRef}>
               <button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="w-8 h-8 md:w-10 md:h-10 bg-[#FDC700] text-[#003C6C] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:scale-105 transition-transform"
+                className="w-9 h-9 md:w-10 md:h-10 bg-white/10 text-white font-black rounded-full flex items-center justify-center shadow-lg border border-white/20 hover:bg-white/20 hover:border-white/40 cursor-pointer hover:scale-105 transition-all"
               >
                 {user.user_metadata?.full_name?.[0] || user.email?.[0] || 'U'}
               </button>
@@ -183,7 +184,7 @@ const Header = ({
           ) : (
             <button
               onClick={onLoginClick}
-              className="px-3 lg:px-6 py-2 md:py-2.5 bg-[#FDC700] text-[#003C6C] font-bold rounded-xl text-xs md:text-sm hover:bg-[#eec00e] transition-all cursor-pointer border-2 border-[#FDC700] flex items-center gap-2 shadow-lg active:shadow-inner active:translate-y-0.5 whitespace-nowrap"
+              className="px-4 lg:px-5 py-2.5 bg-white/10 border border-white/10 text-white font-bold rounded-full text-xs md:text-sm hover:bg-white/20 hover:border-white/30 transition-all cursor-pointer shadow-sm active:scale-95 whitespace-nowrap flex items-center gap-2 backdrop-blur-sm"
             >
               <User className="w-4 h-4" /> <span className="hidden lg:inline">Log in</span>
             </button>
