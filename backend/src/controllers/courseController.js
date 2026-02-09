@@ -55,8 +55,6 @@ const getCourses = async (req, res) => {
           orderBy: { 
             sectionNumber: 'asc' 
           },
-          // 🟢 CRITICAL: We changed 'include' to 'select' here.
-          // This strips out 'createdAt', 'updatedAt', and other unused DB fields.
           select: {
             id: true,
             classNumber: true,
